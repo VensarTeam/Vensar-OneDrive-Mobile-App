@@ -5,24 +5,11 @@ import type { HomeState } from '../models/homeModel';
 export function useHomeViewModel(): HomeState {
   return useMemo(
     () => ({
-      title: 'OneDrive Vensar',
-      subtitle: 'A clean Expo base is ready for Microsoft sign-in, secure token storage, and file features.',
-      actions: [
-        {
-          id: 'auth',
-          title: 'Authentication',
-          description: 'Add Microsoft OAuth flow in the auth feature without crowding the UI layer.',
-        },
-        {
-          id: 'drive',
-          title: 'Drive Files',
-          description: 'Place OneDrive data models, repositories, and screens inside a dedicated drive feature.',
-        },
-        {
-          id: 'ui',
-          title: 'Shared UI',
-          description: 'Reuse theme values and simple components so screens stay small and consistent.',
-        },
+      files: [
+        { id: '1', name: 'Project proposal.docx', meta: 'Edited just now', icon: 'file-word-outline', tint: '#185ABD' },
+        { id: '2', name: 'Q3 Planning.xlsx', meta: 'Edited yesterday', icon: 'file-excel-outline', tint: '#107C41' },
+        { id: '3', name: 'Product presentation.pptx', meta: 'Shared with you', icon: 'file-powerpoint-outline', tint: '#C43E1C' },
+        { id: '4', name: 'Design resources', meta: '12 items · Monday', icon: 'folder-outline', tint: '#F2C811' },
       ],
     }),
     [],

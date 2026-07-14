@@ -4,19 +4,19 @@
     "slug": "oneDriveVensarApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/appstore-icon.png",
+    "userInterfaceStyle": "automatic",
     "ios": {
+      "icon": {
+        "light": "./assets/appstore-icon.png",
+        "dark": "./assets/appstore-icon-dark.png"
+      },
       "supportsTablet": true,
       "bundleIdentifier": "com.rmehra831.oneDriveVensarApp"
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      },
+      "icon": "./assets/android-icons/mipmap-xxxhdpi/ic_launcher.png",
+      "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false,
       "package": "com.rmehra831.oneDriveVensarApp"
     },
@@ -25,7 +25,22 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-image",
+      "expo-font",
+      [
+        "expo-alternate-app-icons",
+        [
+          {
+            "name": "Dark",
+            "ios": "./assets/appstore-icon-dark.png",
+            "android": {
+              "foregroundImage": "./assets/playstore-icon-dark-foreground.png",
+              "backgroundColor": "#000000"
+            }
+          }
+        ]
+      ]
     ]
   }
 }

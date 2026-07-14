@@ -1,11 +1,11 @@
-export type HomeAction = {
+export type DriveFile = {
   id: string;
-  title: string;
-  description: string;
+  name: string;
+  meta: string;
+  icon: string;
+  tint: string;
 };
 
 export type HomeState = {
-  title: string;
-  subtitle: string;
-  actions: HomeAction[];
+  files: DriveFile[];
 };

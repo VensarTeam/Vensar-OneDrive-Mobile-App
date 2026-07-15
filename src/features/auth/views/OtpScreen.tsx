@@ -19,7 +19,8 @@ export function OtpScreen({ navigation, route }: Props) {
   const { theme } = useAppTheme();
   const { colors } = theme;
   const complete = useCallback(() => navigation.replace('Home'), [navigation]);
-  const vm = useOtpViewModel(route.params.email, complete);
+  const vm = useOtpViewModel(route.params.identifier, complete);
+  const deliveryDestination = [route.params.email, route.params.mobile].filter(Boolean).join(' or ');
 
   useEffect(() => {
     verificationProgress.value = withTiming(vm.isAutoVerifying ? 1 : 0, {
@@ -38,7 +39,7 @@ export function OtpScreen({ navigation, route }: Props) {
 
   return (
     <AuthShell
-      subtitle={`Enter the code sent to ${route.params.email}`}
+      subtitle={`Enter the code sent to ${deliveryDestination || route.params.identifier}`}
       title="Verify it’s you"
     >
       <Pressable
@@ -95,9 +96,9 @@ export function OtpScreen({ navigation, route }: Props) {
 
       <View style={styles.expiryRow}>
         {vm.isExpired ? (
-          <Pressable accessibilityRole="button" disabled={vm.isResending} hitSlop={10} onPress={vm.resend}>
+          <Pressable accessibilityRole="button" hitSlop={10} onPress={() => navigation.goBack()}>
             <Text style={[styles.resendLink, { color: colors.primary }]}> 
-              {vm.isResending ? 'Sending new code…' : 'Resend code'}
+              Sign in again for a new code
             </Text>
           </Pressable>
         ) : (

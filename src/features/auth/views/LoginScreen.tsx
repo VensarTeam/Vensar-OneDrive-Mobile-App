@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { TextInput } from 'react-native-paper';
 
 import type { RootStackParamList } from '../../../navigation/routes';
+import type { OtpDeliveryDetails } from '../models/authApiModels';
 import { useLoginViewModel } from '../viewmodels/useLoginViewModel';
 import { AuthInput } from './components/AuthInput';
 import { AuthShell } from './components/AuthShell';
@@ -12,28 +13,31 @@ import { PrimaryButton } from './components/PrimaryButton';
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export function LoginScreen({ navigation }: Props) {
-  const goToOtp = useCallback((email: string) => navigation.navigate('Otp', { email }), [navigation]);
+  const goToOtp = useCallback(
+    ({ email, identifier, mobile }: OtpDeliveryDetails) =>
+      navigation.navigate('Otp', { email, identifier, mobile }),
+    [navigation],
+  );
   const vm = useLoginViewModel(goToOtp);
 
   return (
     <AuthShell
-      subtitle="Sign in with your work email to continue."
+      subtitle="Sign in with your mobile number or work email to continue."
       title="Welcome back"
     >
       <View style={{ gap: 18 }}>
         <AuthInput
           autoCapitalize="none"
-          autoComplete="email"
-          errorMessage={vm.errors.email}
-          keyboardType="email-address"
-          label="Email address"
-          left={<TextInput.Icon icon="email-outline" />}
-          onChangeText={vm.setEmail}
+          autoComplete="username"
+          errorMessage={vm.errors.loginId}
+          label="Mobile number or email"
+          left={<TextInput.Icon icon="account-outline" />}
+          onChangeText={vm.setLoginId}
           onSubmitEditing={() => undefined}
-          placeholder="name@company.com"
+          placeholder="Mobile number or work email"
           returnKeyType="next"
-          textContentType="emailAddress"
-          value={vm.email}
+          textContentType="username"
+          value={vm.loginId}
         />
         <AuthInput
           autoComplete="current-password"

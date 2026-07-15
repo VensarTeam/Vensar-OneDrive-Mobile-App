@@ -1,24 +1,85 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useResponsiveLayout } from '../../../core/responsive';
 import { useAppTheme } from '../../../core/theme';
 import { fontFamilies } from '../../../core/theme/typography';
+import type { HomeTabParamList } from '../../../navigation/HomeTabs';
+import { useAuthSession } from '../../auth/services/auth-session-provider';
+import type { Service } from '../models/service-model';
 import { useHomeViewModel } from '../viewmodels/useHomeViewModel';
 
+const serviceIcons: Record<string, string> = {
+  airports: 'airplane',
+  automation: 'robot-industrial',
+  'car-parks': 'car-multiple',
+  commercial: 'office-building',
+  elevated: 'bridge',
+  facilities: 'domain',
+  factories: 'factory',
+  highways: 'highway',
+  'hydro-power': 'hydro-power',
+  industrial: 'city-variant-outline',
+  institutional: 'bank-outline',
+  'intake-treatment': 'water-pump',
+  irrigation: 'sprinkler-variant',
+  metro: 'subway-variant',
+  mining: 'pickaxe',
+  'ohd-substation': 'transmission-tower',
+  pipeline: 'pipe',
+  'power-plants': 'lightning-bolt',
+  railways: 'train',
+  'railway-stations': 'train-car',
+  residential: 'home-city-outline',
+  'storage-distribution': 'warehouse',
+  transmission: 'transmission-tower-export',
+  'transit-terminals': 'bus-marker',
+  tunnels: 'tunnel-outline',
+};
+
+const accents = ['#0078D4', '#6B5CE7', '#008272', '#C239B3', '#D83B01', '#107C10'];
+
+function getInitials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toLocaleUpperCase())
+    .join('') || 'U';
+}
+
+function serviceAccent(serviceId: string) {
+  const value = [...serviceId].reduce((total, character) => total + character.charCodeAt(0), 0);
+  return accents[value % accents.length];
+}
+
 export function HomeScreen() {
+  const navigation = useNavigation<BottomTabNavigationProp<HomeTabParamList, 'Dashboard'>>();
   const insets = useSafeAreaInsets();
+  const layout = useResponsiveLayout();
   const { colorScheme, theme } = useAppTheme();
   const { colors } = theme;
   const vm = useHomeViewModel();
+  const { user } = useAuthSession();
+  const columns = layout.isCompact ? 2 : 3;
+  const displayName = user?.name || 'User';
 
   return (
-    <ScrollView
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 14 }]}
-      contentInsetAdjustmentBehavior="automatic"
-      style={[styles.screen, { backgroundColor: colors.surface }]}
-    >
+    <View style={[styles.screen, { backgroundColor: colors.surface }]}>
+      <View style={[styles.contentInner, { maxWidth: layout.maxContentWidth }]}>
+        <View
+          style={[
+            styles.fixedContent,
+            {
+              paddingHorizontal: layout.horizontalPadding,
+              paddingTop: insets.top + 14,
+            },
+          ]}
+        >
         <View style={styles.header}>
           <View style={styles.brand}>
             <Image
@@ -35,12 +96,8 @@ export function HomeScreen() {
           <View style={styles.userGreeting}>
             <View style={styles.greetingCopy}>
               <Text style={[styles.welcomeLabel, { color: colors.textMuted }]}>Welcome,</Text>
-              <Text
-                numberOfLines={1}
-                selectable
-                style={[styles.welcomeName, { color: colors.text }]}
-              >
-                Ritesh Mehra
+              <Text numberOfLines={1} selectable style={[styles.welcomeName, { color: colors.text }]}>
+                {displayName}
               </Text>
             </View>
             <View
@@ -49,50 +106,193 @@ export function HomeScreen() {
                 { backgroundColor: colors.surfaceMuted, borderColor: `${colors.primary}22` },
               ]}
             >
-              <Text style={[styles.avatarText, { color: colors.primary }]}>RM</Text>
+              {user?.avatar ? (
+                <Image accessibilityLabel={`${displayName} profile photo`} source={user.avatar} style={styles.avatarImage} />
+              ) : (
+                <Text style={[styles.avatarText, { color: colors.primary }]}>{getInitials(displayName)}</Text>
+              )}
             </View>
           </View>
         </View>
 
-        <Pressable style={[styles.search, { backgroundColor: colors.background }]}> 
-          <Icon color={colors.textMuted} size={21} source="magnify" />
-          <Text style={[styles.searchText, { color: colors.textMuted }]}>Search files</Text>
-        </Pressable>
+        <View style={styles.hero}>
+          <Text selectable style={[styles.eyebrow, { color: colors.primary }]}>VENSAR SERVICES</Text>
+          <Text selectable style={[styles.heroTitle, { color: colors.text }]}>What are you working on?</Text>
+          <Text selectable style={[styles.heroCopy, { color: colors.textMuted }]}>
+            Find your service area and access its project files.
+          </Text>
+        </View>
+
+        <View
+          style={[
+            styles.search,
+            { backgroundColor: colors.background, borderColor: vm.searchQuery ? colors.primary : colors.border },
+          ]}
+        >
+          <Icon color={vm.searchQuery ? colors.primary : colors.textMuted} size={21} source="magnify" />
+          <TextInput
+            accessibilityLabel="Search services"
+            autoCapitalize="none"
+            autoCorrect={false}
+            onChangeText={vm.setSearchQuery}
+            placeholder="Search services"
+            placeholderTextColor={colors.textMuted}
+            returnKeyType="search"
+            selectionColor={colors.primary}
+            style={[styles.searchInput, { color: colors.text }]}
+            value={vm.searchQuery}
+          />
+          {vm.searchQuery ? (
+            <Pressable accessibilityLabel="Clear search" hitSlop={10} onPress={vm.clearSearch}>
+              <Icon color={colors.textMuted} size={20} source="close-circle" />
+            </Pressable>
+          ) : null}
+        </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent</Text>
-          <Pressable><Text style={[styles.link, { color: colors.primary }]}>See all</Text></Pressable>
+          <Text selectable style={[styles.sectionTitle, { color: colors.text }]}>Services</Text>
+          {!vm.isLoading && !vm.error ? (
+            <Text selectable style={[styles.count, { color: colors.textMuted }]}>
+              {vm.filteredServices.length === vm.serviceCount
+                ? `${vm.serviceCount} available`
+                : `${vm.filteredServices.length} of ${vm.serviceCount}`}
+            </Text>
+          ) : null}
+        </View>
         </View>
 
-        <View style={styles.files}>
-          {vm.files.map((file) => (
-            <Pressable key={file.id} style={({ pressed }) => [styles.fileRow, { backgroundColor: pressed ? colors.background : colors.surface }]}> 
-              <View style={[styles.fileIcon, { backgroundColor: `${file.tint}12` }]}> 
-                <Icon color={file.tint} size={27} source={file.icon} />
+        <ScrollView
+          contentContainerStyle={[
+            styles.servicesContent,
+            { paddingHorizontal: layout.horizontalPadding },
+          ]}
+          contentInsetAdjustmentBehavior="automatic"
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          style={styles.servicesScroll}
+        >
+          {vm.isLoading ? (
+            <View style={styles.stateContainer}>
+              <ActivityIndicator color={colors.primary} size="small" />
+              <Text selectable style={[styles.stateMessage, { color: colors.textMuted }]}>Loading services…</Text>
+            </View>
+          ) : vm.error ? (
+            <View style={[styles.errorState, { backgroundColor: `${colors.danger}0D`, borderColor: `${colors.danger}30` }]}>
+              <View style={[styles.stateIcon, { backgroundColor: `${colors.danger}14` }]}>
+                <Icon color={colors.danger} size={25} source="cloud-alert-outline" />
               </View>
-              <View style={styles.fileInfo}>
-                <Text numberOfLines={1} style={[styles.fileName, { color: colors.text }]}>{file.name}</Text>
-                <Text style={[styles.fileMeta, { color: colors.textMuted }]}>{file.meta}</Text>
+              <Text selectable style={[styles.stateTitle, { color: colors.text }]}>Couldn’t load services</Text>
+              <Text selectable style={[styles.stateMessage, { color: colors.textMuted }]}>{vm.error}</Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={vm.loadServices}
+                style={({ pressed }) => [styles.retryButton, { backgroundColor: pressed ? colors.primaryPressed : colors.primary }]}
+              >
+                <Icon color={colors.onPrimary} size={18} source="refresh" />
+                <Text style={[styles.retryLabel, { color: colors.onPrimary }]}>Try again</Text>
+              </Pressable>
+            </View>
+          ) : vm.filteredServices.length === 0 ? (
+            <View style={styles.stateContainer}>
+              <View style={[styles.stateIcon, { backgroundColor: colors.surfaceMuted }]}>
+                <Icon color={colors.textMuted} size={25} source="magnify-close" />
               </View>
-              <Icon color={colors.textMuted} size={22} source="dots-horizontal" />
-            </Pressable>
-          ))}
-        </View>
+              <Text selectable style={[styles.stateTitle, { color: colors.text }]}>No matching services</Text>
+              <Text selectable style={[styles.stateMessage, { color: colors.textMuted }]}>Try a different service name or keyword.</Text>
+            </View>
+          ) : (
+            <View style={styles.grid}>
+              {vm.filteredServices.map((service) => (
+                <ServiceCard
+                  columns={columns}
+                  key={service.id}
+                  onPress={() => navigation.navigate('Files', {
+                    serviceId: service.serviceId,
+                    serviceName: service.serviceName,
+                  })}
+                  service={service}
+                />
+              ))}
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    </View>
+  );
+}
 
-    </ScrollView>
+function ServiceCard({ columns, onPress, service }: { columns: number; onPress: () => void; service: Service }) {
+  const { theme } = useAppTheme();
+  const accent = serviceAccent(service.serviceId);
+
+  return (
+    <Pressable
+      accessibilityLabel={service.serviceName}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.card,
+        {
+          backgroundColor: pressed ? theme.colors.surfaceMuted : theme.colors.background,
+          borderColor: pressed ? theme.colors.primary : theme.colors.border,
+          transform: [{ scale: pressed ? 0.985 : 1 }],
+          width: `${100 / columns - 1.6}%`,
+        },
+      ]}
+    >
+      <View style={[styles.serviceIcon, { backgroundColor: `${accent}14` }]}>
+        <Icon color={accent} size={28} source={serviceIcons[service.serviceIcon] ?? 'shape-outline'} />
+      </View>
+      <Text numberOfLines={2} selectable style={[styles.serviceName, { color: theme.colors.text }]}>
+        {service.serviceName}
+      </Text>
+      <View style={styles.cardFooter}>
+        <Text numberOfLines={1} style={[styles.serviceCode, { color: theme.colors.textMuted }]}>
+          {service.serviceId.replaceAll('-', ' ')}
+        </Text>
+        <Icon color={theme.colors.textMuted} size={17} source="chevron-right" />
+      </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 }, content: { paddingBottom: 32, paddingHorizontal: 20 },
+  screen: { flex: 1 },
+  contentInner: { alignSelf: 'center', flex: 1, width: '100%' },
+  fixedContent: { flexShrink: 0 },
+  servicesScroll: { flex: 1 },
+  servicesContent: { paddingBottom: 24 },
   header: { alignItems: 'center', flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
-  brand: { flexShrink: 1, height: 54, justifyContent: 'center', transform: [{ translateX: -12 }], width: 144 }, brandLogo: { height: 54, width: 120 },
+  brand: { flexShrink: 1, height: 54, justifyContent: 'center', transform: [{ translateX: -12 }], width: 144 },
+  brandLogo: { height: 54, width: 120 },
   userGreeting: { alignItems: 'center', flexDirection: 'row', flexShrink: 0, gap: 10 },
   greetingCopy: { alignItems: 'flex-end', maxWidth: 104 },
   welcomeLabel: { fontFamily: fontFamilies.regular, fontSize: 11, lineHeight: 14 },
   welcomeName: { fontFamily: fontFamilies.semibold, fontSize: 13, lineHeight: 18 },
-  avatar: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, height: 40, justifyContent: 'center', width: 40 }, avatarText: { fontFamily: fontFamilies.semibold, fontSize: 13 },
-  search: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 14, flexDirection: 'row', gap: 11, marginTop: 26, minHeight: 52, paddingHorizontal: 16 }, searchText: { flex: 1, fontFamily: fontFamilies.regular, fontSize: 15 },
-  sectionHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 12, paddingTop: 30 }, sectionTitle: { fontFamily: fontFamilies.bold, fontSize: 22 }, link: { fontFamily: fontFamilies.semibold, fontSize: 14 },
-  files: { gap: 3 }, fileRow: { alignItems: 'center', borderRadius: 14, flexDirection: 'row', gap: 14, minHeight: 72, paddingHorizontal: 10 }, fileIcon: { alignItems: 'center', borderRadius: 12, height: 46, justifyContent: 'center', width: 46 }, fileInfo: { flex: 1, gap: 4 }, fileName: { fontFamily: fontFamilies.semibold, fontSize: 15 }, fileMeta: { fontFamily: fontFamilies.regular, fontSize: 12 },
+  avatar: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, height: 40, justifyContent: 'center', overflow: 'hidden', width: 40 },
+  avatarText: { fontFamily: fontFamilies.semibold, fontSize: 13 },
+  avatarImage: { height: '100%', width: '100%' },
+  hero: { gap: 5, paddingTop: 27 },
+  eyebrow: { fontFamily: fontFamilies.bold, fontSize: 11, letterSpacing: 1.3, lineHeight: 16 },
+  heroTitle: { fontFamily: fontFamilies.bold, fontSize: 25, letterSpacing: -0.5, lineHeight: 32 },
+  heroCopy: { fontFamily: fontFamilies.regular, fontSize: 14, lineHeight: 20 },
+  search: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 10, marginTop: 22, minHeight: 54, paddingHorizontal: 15 },
+  searchInput: { flex: 1, fontFamily: fontFamilies.regular, fontSize: 15, height: 52, paddingVertical: 0 },
+  sectionHeader: { alignItems: 'baseline', flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 14, paddingTop: 27 },
+  sectionTitle: { fontFamily: fontFamilies.bold, fontSize: 21, lineHeight: 27 },
+  count: { fontFamily: fontFamilies.regular, fontSize: 12, fontVariant: ['tabular-nums'] },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  card: { borderCurve: 'continuous', borderRadius: 17, borderWidth: StyleSheet.hairlineWidth, gap: 11, minHeight: 158, padding: 14 },
+  serviceIcon: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 13, height: 48, justifyContent: 'center', width: 48 },
+  serviceName: { flex: 1, fontFamily: fontFamilies.semibold, fontSize: 15, lineHeight: 19 },
+  cardFooter: { alignItems: 'center', flexDirection: 'row', gap: 3 },
+  serviceCode: { flex: 1, fontFamily: fontFamilies.regular, fontSize: 10, textTransform: 'capitalize' },
+  stateContainer: { alignItems: 'center', gap: 9, justifyContent: 'center', minHeight: 220, paddingHorizontal: 24 },
+  errorState: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 20, borderWidth: 1, gap: 9, minHeight: 250, padding: 24 },
+  stateIcon: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 14, height: 48, justifyContent: 'center', width: 48 },
+  stateTitle: { fontFamily: fontFamilies.semibold, fontSize: 16, lineHeight: 22, textAlign: 'center' },
+  stateMessage: { fontFamily: fontFamilies.regular, fontSize: 13, lineHeight: 19, textAlign: 'center' },
+  retryButton: { alignItems: 'center', borderRadius: 20, flexDirection: 'row', gap: 7, marginTop: 5, minHeight: 40, paddingHorizontal: 17 },
+  retryLabel: { fontFamily: fontFamilies.semibold, fontSize: 13 },
 });

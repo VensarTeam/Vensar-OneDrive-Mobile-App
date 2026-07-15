@@ -1,5 +1,5 @@
 export type AuthCredentials = {
-  email: string;
+  loginId: string;
   password: string;
 };
 

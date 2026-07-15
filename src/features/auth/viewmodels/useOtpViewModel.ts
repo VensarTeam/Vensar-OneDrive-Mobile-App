@@ -1,21 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { resendOtp, verifyOtp } from '../repositories/authRepository';
+import { useToast } from '../../../shared/toast/toast-provider';
+import { verifyOtp } from '../repositories/authRepository';
+import { useAuthSession } from '../services/auth-session-provider';
 import { isValidOtp } from '../services/authValidationService';
 
 const otpLifetimeSeconds = 5 * 60;
-const automaticVerificationDurationMs = 4_000;
 
-function wait(milliseconds: number) {
-  return new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
-}
-
-export function useOtpViewModel(email: string, onSuccess: () => void) {
+export function useOtpViewModel(identifier: string, onSuccess: () => void) {
+  const { showToast } = useToast();
+  const { completeSignIn } = useAuthSession();
   const [otp, setOtp] = useState('');
   const [secondsRemaining, setSecondsRemaining] = useState(otpLifetimeSeconds);
   const [error, setError] = useState<string>();
   const [isSubmitting, setSubmitting] = useState(false);
-  const [isResending, setResending] = useState(false);
   const [isAutoVerifying, setAutoVerifying] = useState(false);
   const automaticAttemptedOtp = useRef<string | undefined>(undefined);
 
@@ -45,14 +43,19 @@ export function useOtpViewModel(email: string, onSuccess: () => void) {
     setError(undefined);
     setAutoVerifying(true);
     try {
-      await Promise.all([verifyOtp(email, otp), wait(automaticVerificationDurationMs)]);
+      const response = await verifyOtp(identifier, otp);
+      await completeSignIn(response);
+      showToast({ message: 'Your account has been verified securely.', title: 'Welcome back' });
       onSuccess();
-    } catch {
-      setError('Automatic verification failed. Check the code and try again.');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Verification failed. Check the code and try again.';
+      setError(message);
+      showToast({ message, tone: 'error' });
     } finally {
       setAutoVerifying(false);
     }
-  }, [email, isAutoVerifying, isExpired, onSuccess, otp]);
+  }, [completeSignIn, identifier, isAutoVerifying, isExpired, onSuccess, otp, showToast]);
 
   useEffect(() => {
     if (otp.length === 6) void verifyAutomatically();
@@ -69,38 +72,28 @@ export function useOtpViewModel(email: string, onSuccess: () => void) {
     }
     setSubmitting(true);
     try {
-      await verifyOtp(email, otp);
+      const response = await verifyOtp(identifier, otp);
+      await completeSignIn(response);
+      showToast({ message: 'Your account has been verified securely.', title: 'Welcome back' });
       onSuccess();
-    } catch {
-      setError('Verification failed. Check the code and try again.');
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Verification failed. Check the code and try again.';
+      setError(message);
+      showToast({ message, tone: 'error' });
     } finally {
       setSubmitting(false);
     }
-  }, [email, isExpired, onSuccess, otp]);
-
-  const resend = useCallback(async () => {
-    setResending(true);
-    try {
-      await resendOtp(email);
-      setOtp('');
-      automaticAttemptedOtp.current = undefined;
-      setError(undefined);
-      setSecondsRemaining(otpLifetimeSeconds);
-    } finally {
-      setResending(false);
-    }
-  }, [email]);
+  }, [completeSignIn, identifier, isExpired, onSuccess, otp, showToast]);
 
   return {
     canSubmit: otp.length === 6 && !isExpired && !isSubmitting && !isAutoVerifying,
     error,
     formattedTime,
     isExpired,
-    isResending,
     isSubmitting,
     isAutoVerifying,
     otp,
-    resend,
     setOtp: (value: string) => {
       const nextOtp = value.replace(/\D/g, '').slice(0, 6);
       if (nextOtp !== otp) automaticAttemptedOtp.current = undefined;

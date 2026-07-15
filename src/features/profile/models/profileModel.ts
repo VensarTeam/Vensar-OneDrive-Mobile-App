@@ -11,9 +11,9 @@ export type ProfileSection = {
 };
 
 export type UserProfile = {
+  avatar: string | null;
   displayName: string;
   email: string;
   initials: string;
-  organization: string;
   role: string;
 };

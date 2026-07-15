@@ -5,6 +5,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from 'react-native';
@@ -120,7 +121,11 @@ export function ProfileScreen() {
           <View style={[styles.glow, { backgroundColor: `${colors.primary}18` }]} />
           <View style={[styles.avatarRing, { borderColor: `${colors.primary}28` }]}> 
             <View style={[styles.avatar, { backgroundColor: colors.primary }]}> 
-              <Text style={[styles.avatarText, { color: colors.onPrimary }]}>{vm.profile.initials}</Text>
+              {vm.profile.avatar ? (
+                <Image accessibilityLabel={`${vm.profile.displayName} profile photo`} source={vm.profile.avatar} style={styles.avatarImage} />
+              ) : (
+                <Text style={[styles.avatarText, { color: colors.onPrimary }]}>{vm.profile.initials}</Text>
+              )}
             </View>
           </View>
           <View style={styles.identity}>
@@ -152,6 +157,36 @@ export function ProfileScreen() {
             </View>
           </View>
         ))}
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>Appearance</Text>
+          <View
+            style={[
+              styles.sectionCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <View style={styles.appearanceRow}>
+              <View style={[styles.detailIcon, { backgroundColor: colors.surfaceMuted }]}>
+                <Icon
+                  color={colors.primary}
+                  size={20}
+                  source={vm.isDarkMode ? 'weather-night' : 'white-balance-sunny'}
+                />
+              </View>
+              <View style={styles.appearanceContent}>
+                <Text style={[styles.detailLabel, { color: colors.text }]}>Dark mode</Text>
+                <Switch
+                  accessibilityLabel="Dark mode"
+                  onValueChange={vm.setDarkMode}
+                  thumbColor={colors.onPrimary}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  value={vm.isDarkMode}
+                />
+              </View>
+            </View>
+          </View>
+        </View>
 
         <Pressable
           accessibilityRole="button"
@@ -200,8 +235,9 @@ const styles = StyleSheet.create({
   },
   glow: { borderRadius: 120, height: 170, position: 'absolute', right: -58, top: -86, width: 170 },
   avatarRing: { alignItems: 'center', borderRadius: 40, borderWidth: 6, height: 80, justifyContent: 'center', width: 80 },
-  avatar: { alignItems: 'center', borderRadius: 33, height: 66, justifyContent: 'center', width: 66 },
+  avatar: { alignItems: 'center', borderRadius: 33, height: 66, justifyContent: 'center', overflow: 'hidden', width: 66 },
   avatarText: { fontFamily: fontFamilies.bold, fontSize: 21, letterSpacing: 0.4 },
+  avatarImage: { height: '100%', width: '100%' },
   identity: { alignItems: 'flex-start', flex: 1, gap: 4 },
   name: { fontFamily: fontFamilies.bold, fontSize: 21, letterSpacing: -0.25 },
   email: { fontFamily: fontFamilies.regular, fontSize: 14 },
@@ -218,6 +254,8 @@ const styles = StyleSheet.create({
   detailDivider: { borderBottomWidth: StyleSheet.hairlineWidth },
   detailLabel: { flex: 1, fontFamily: fontFamilies.semibold, fontSize: 14 },
   detailValue: { flexShrink: 1, fontFamily: fontFamilies.regular, fontSize: 13, textAlign: 'right' },
+  appearanceRow: { alignItems: 'center', flexDirection: 'row', minHeight: 65, paddingLeft: 14 },
+  appearanceContent: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 12, minHeight: 65, paddingHorizontal: 15 },
   signOutButton: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 17, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 10, justifyContent: 'center', marginTop: 27, minHeight: 54, paddingHorizontal: 18 },
   signOutText: { fontFamily: fontFamilies.semibold, fontSize: 15 },
   footer: { fontFamily: fontFamilies.regular, fontSize: 11, paddingTop: 18, textAlign: 'center' },

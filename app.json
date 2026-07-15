@@ -24,7 +24,19 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": true,
+          "faceIDPermission": "Use Face ID to securely unlock Vensar Drive and access your company files."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Use Face ID to securely unlock Vensar Drive and access your company files."
+        }
+      ],
       "expo-web-browser",
       "expo-image",
       "expo-font",

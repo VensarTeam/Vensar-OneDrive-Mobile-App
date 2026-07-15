@@ -1,12 +1,10 @@
 import type { AuthCredentials, AuthFieldErrors } from '../models/authCredentials';
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
 export function validateCredentials(credentials: AuthCredentials): AuthFieldErrors {
   const errors: AuthFieldErrors = {};
 
-  if (!emailPattern.test(credentials.email.trim())) {
-    errors.email = 'Enter a valid work email address.';
+  if (credentials.loginId.trim().length < 3) {
+    errors.loginId = 'Enter your mobile number or work email.';
   }
 
   if (credentials.password.length < 8) {

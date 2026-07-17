@@ -67,6 +67,7 @@ export function SharedScreen() {
       folderId: item.resourceId,
       folderName: item.name,
       projectId: item.projectId,
+      permission: item.permission,
       serviceId: item.serviceId,
       serviceName: item.serviceId.replaceAll('-', ' '),
     });

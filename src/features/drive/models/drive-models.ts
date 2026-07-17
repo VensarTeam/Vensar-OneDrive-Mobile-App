@@ -67,10 +67,16 @@ export type ShareGrant = {
   permission: SharePermission;
   user?: ShareUser;
   userId: string;
+  userEmail?: string;
+  userName?: string;
+  sharedAt?: string;
 };
 
 export type ShareLink = {
+  accessType?: ShareAccessType;
+  hasPassword?: boolean;
   id: string;
+  isActive?: boolean;
   permission: SharePermission;
   token?: string;
   shareToken?: string;
@@ -86,6 +92,8 @@ export type ResourceShare = {
   resourceId: string;
   resourceType: DriveResourceType;
 };
+
+export type DriveAccessMode = 'owner' | SharePermission;
 
 export type SharedDriveItem = {
   folderId: string | null;

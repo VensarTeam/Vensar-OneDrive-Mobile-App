@@ -18,6 +18,7 @@ export type HomeTabParamList = {
     folderId?: string;
     folderName?: string;
     projectId?: string;
+    permission?: 'admin' | 'editor' | 'viewer';
     serviceId?: string;
     serviceName?: string;
   } | undefined;
@@ -69,7 +70,7 @@ function TabButton(props: BottomTabBarButtonProps) {
 
 export function HomeTabs() {
   const insets = useSafeAreaInsets();
-  const { theme } = useAppTheme();
+  const { colorScheme, theme } = useAppTheme();
   const { colors } = theme;
 
   return (
@@ -105,7 +106,7 @@ export function HomeTabs() {
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
           borderTopWidth: StyleSheet.hairlineWidth,
-          boxShadow: '0 -8px 30px rgba(15, 23, 42, 0.09)',
+          boxShadow: colorScheme === 'dark' ? '0 -8px 30px rgba(0, 0, 0, 0.34)' : '0 -8px 30px rgba(15, 23, 42, 0.09)',
           height: 68 + insets.bottom,
           paddingBottom: Math.max(insets.bottom, 9),
           paddingHorizontal: 10,

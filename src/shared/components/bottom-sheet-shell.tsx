@@ -19,7 +19,7 @@ export function BottomSheetShell({
   visible: boolean;
 }>) {
   const insets = useSafeAreaInsets();
-  const { theme } = useAppTheme();
+  const { colorScheme, theme } = useAppTheme();
 
   return (
     <Modal
@@ -41,6 +41,7 @@ export function BottomSheetShell({
             {
               backgroundColor: theme.colors.background,
               borderColor: theme.colors.border,
+              boxShadow: colorScheme === 'dark' ? '0 -18px 48px rgba(0, 0, 0, 0.52)' : '0 -18px 48px rgba(8, 15, 28, 0.24)',
               marginTop: insets.top + 24,
               paddingBottom: Math.max(insets.bottom, 14),
             },
@@ -76,7 +77,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     borderWidth: StyleSheet.hairlineWidth,
-    boxShadow: '0 -18px 48px rgba(8, 15, 28, 0.24)',
     maxHeight: '88%',
     overflow: 'hidden',
   },

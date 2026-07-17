@@ -45,10 +45,10 @@ export function AuthShell({ children, subtitle, title }: AuthShellProps) {
       >
         <View pointerEvents="none" style={[styles.orb, styles.orbTop, { backgroundColor: colors.accent }]} />
         <View pointerEvents="none" style={[styles.orb, styles.orbBottom, { backgroundColor: colors.primary }]} />
-        <CloudStorageBackdrop color={colors.primary} />
+        <CloudStorageBackdrop color={colors.primary} tileColor={colors.surface} />
 
         <Animated.View entering={FadeInUp.duration(520).springify().damping(18)} style={styles.content}>
-          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, paddingHorizontal: responsive.isCompact ? 24 : 42 }]}> 
+          <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, boxShadow: colorScheme === 'dark' ? '0 24px 70px rgba(0, 0, 0, 0.38)' : '0 24px 70px rgba(30, 76, 112, 0.13)', paddingHorizontal: responsive.isCompact ? 24 : 42 }]}>
             <View style={styles.brandLockup}>
               <Image
                 accessibilityLabel="OneDrive by Vensar"
@@ -75,15 +75,15 @@ export function AuthShell({ children, subtitle, title }: AuthShellProps) {
   );
 }
 
-function CloudStorageBackdrop({ color }: { color: string }) {
+function CloudStorageBackdrop({ color, tileColor }: { color: string; tileColor: string }) {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       <View style={styles.cloudCluster}>
         <Icon color={color} size={92} source="cloud-outline" />
-        <View style={[styles.fileTile, styles.fileTileOne, { borderColor: color }]}> 
+        <View style={[styles.fileTile, styles.fileTileOne, { backgroundColor: tileColor, borderColor: color }]}>
           <Icon color={color} size={17} source="file-outline" />
         </View>
-        <View style={[styles.fileTile, styles.fileTileTwo, { borderColor: color }]}> 
+        <View style={[styles.fileTile, styles.fileTileTwo, { backgroundColor: tileColor, borderColor: color }]}>
           <Icon color={color} size={17} source="image-outline" />
         </View>
       </View>
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scrollContent: { alignItems: 'center', flexGrow: 1, justifyContent: 'center' },
   content: { maxWidth: 510, width: '100%' },
-  card: { borderCurve: 'continuous', borderRadius: 28, borderWidth: 1, boxShadow: '0 24px 70px rgba(30, 76, 112, 0.13)', paddingBottom: 40, paddingTop: 36 },
+  card: { borderCurve: 'continuous', borderRadius: 28, borderWidth: 1, paddingBottom: 40, paddingTop: 36 },
   brandLockup: { alignItems: 'center', alignSelf: 'center', height: 82, justifyContent: 'center', width: 230 },
   logo: { height: 82, width: 230 },
   heading: { alignItems: 'center', gap: 9, paddingTop: 27 },
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   orbTop: { height: 360, left: -180, top: -130, width: 360 },
   orbBottom: { bottom: -190, height: 420, right: -210, width: 420 },
   cloudCluster: { opacity: 0.08, position: 'absolute', right: 24, top: 78 },
-  fileTile: { alignItems: 'center', backgroundColor: '#FFFFFF', borderCurve: 'continuous', borderRadius: 8, borderWidth: 1, height: 32, justifyContent: 'center', position: 'absolute', width: 32 },
+  fileTile: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 8, borderWidth: 1, height: 32, justifyContent: 'center', position: 'absolute', width: 32 },
   fileTileOne: { right: 3, top: 56, transform: [{ rotate: '5deg' }] },
   fileTileTwo: { right: 38, top: 70, transform: [{ rotate: '-5deg' }] },
   smallCloud: { bottom: 62, left: 24, opacity: 0.055, transform: [{ rotate: '-4deg' }] },

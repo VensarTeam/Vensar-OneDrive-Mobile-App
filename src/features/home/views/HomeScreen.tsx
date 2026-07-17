@@ -208,6 +208,7 @@ export function HomeScreen() {
                   columns={columns}
                   key={service.id}
                   onPress={() => navigation.navigate('Files', {
+                    permission: 'admin',
                     serviceId: service.serviceId,
                     serviceName: service.serviceName,
                   })}

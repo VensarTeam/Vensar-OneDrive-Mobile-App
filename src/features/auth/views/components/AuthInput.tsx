@@ -22,7 +22,7 @@ export function AuthInput({ errorMessage, style, ...props }: AuthInputProps) {
         outlineColor={colors.border}
         outlineStyle={styles.outline}
         selectionColor={colors.primary}
-        style={[styles.input, { backgroundColor: '#F9FBFD' }, style]}
+        style={[styles.input, { backgroundColor: colors.surfaceMuted }, style]}
         textColor={colors.text}
         theme={{ colors: { error: colors.danger, onSurfaceVariant: colors.textMuted } }}
         {...props}

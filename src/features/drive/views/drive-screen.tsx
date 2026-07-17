@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { Icon } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import type { SelectedResource } from './resource-action-modal';
 import { ResourceActionModal } from './resource-action-modal';
 
 type Props = BottomTabScreenProps<HomeTabParamList, 'Files'>;
+type ViewMode = 'grid' | 'list';
 
 export function DriveScreen({ route }: Props) {
   const insets = useSafeAreaInsets();
@@ -21,92 +22,89 @@ export function DriveScreen({ route }: Props) {
   const { theme } = useAppTheme();
   const { colors } = theme;
   const serviceId = route.params?.serviceId;
-  const vm = useDriveBrowserViewModel({
-    initialFolderId: route.params?.folderId,
-    initialFolderName: route.params?.folderName,
-    initialProjectId: route.params?.projectId,
-    serviceId,
+  const accessMode = route.params?.permission ?? 'owner';
+  const isReadOnly = accessMode === 'viewer';
+  const vm = useDriveBrowserViewModel({ initialFolderId: route.params?.folderId, initialFolderName: route.params?.folderName, initialProjectId: route.params?.projectId, serviceId });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [actionResources, setActionResources] = useState<SelectedResource[]>();
+  const [initialMode, setInitialMode] = useState<'actions' | 'copy' | 'move' | 'share'>('actions');
+  const resources = useMemo<SelectedResource[]>(() => vm.listing ? [
+    ...vm.listing.folders.map((item) => ({ item, type: 'folder' as const })),
+    ...vm.listing.files.map((item) => ({ item, type: 'file' as const })),
+  ] : [], [vm.listing]);
+  const visibleResources = useMemo(() => {
+    const query = searchQuery.trim().toLocaleLowerCase();
+    return query ? resources.filter(({ item }) => item.name.toLocaleLowerCase().includes(query)) : resources;
+  }, [resources, searchQuery]);
+  const selectedResources = resources.filter(({ item }) => selectedIds.has(item.id));
+
+  const toggleSelection = (resource: SelectedResource) => setSelectedIds((current) => {
+    const next = new Set(current);
+    if (next.has(resource.item.id)) next.delete(resource.item.id); else next.add(resource.item.id);
+    return next;
   });
-  const [selectedResource, setSelectedResource] = useState<SelectedResource>();
+  const clearSelection = () => setSelectedIds(new Set());
+  const openTransfer = (mode: 'copy' | 'move') => { setInitialMode(mode); setActionResources(selectedResources); };
+  const allVisibleSelected = visibleResources.length > 0 && visibleResources.every(({ item }) => selectedIds.has(item.id));
+  const toggleSelectAll = () => setSelectedIds((current) => {
+    const next = new Set(current);
+    if (allVisibleSelected) visibleResources.forEach(({ item }) => next.delete(item.id));
+    else visibleResources.forEach(({ item }) => next.add(item.id));
+    return next;
+  });
 
   return (
-    <ScrollView
-      contentContainerStyle={[
-        styles.scrollContent,
-        { paddingHorizontal: responsive.horizontalPadding, paddingTop: insets.top + 16 },
-      ]}
-      contentInsetAdjustmentBehavior="automatic"
-      style={[styles.screen, { backgroundColor: colors.background }]}
-    >
+    <ScrollView contentContainerStyle={[styles.scrollContent, { paddingHorizontal: responsive.horizontalPadding, paddingTop: insets.top + 16 }]} contentInsetAdjustmentBehavior="automatic" style={[styles.screen, { backgroundColor: colors.background }]}>
       <View style={[styles.content, { maxWidth: responsive.maxContentWidth }]}>
-        <View style={styles.header}>
-          <View style={styles.headerCopy}>
-            <Text accessibilityRole="header" style={[styles.title, { color: colors.text }]}>Files</Text>
-            <Text numberOfLines={1} selectable style={[styles.subtitle, { color: colors.textMuted }]}>
-              {vm.selectedProject?.shortName ?? route.params?.serviceName ?? 'Choose a service from Home'}
-            </Text>
-          </View>
-          {serviceId ? <Pressable accessibilityLabel="Refresh" hitSlop={10} onPress={vm.refresh}><Icon color={colors.primary} size={24} source="refresh" /></Pressable> : null}
-        </View>
+        <View style={styles.header}><View style={styles.headerCopy}><Text accessibilityRole="header" style={[styles.title, { color: colors.text }]}>Files</Text><Text numberOfLines={1} selectable style={[styles.subtitle, { color: colors.textMuted }]}>{vm.selectedProject?.shortName ?? route.params?.serviceName ?? 'Choose a service from Home'}</Text></View>{serviceId ? <Pressable accessibilityLabel="Refresh" hitSlop={10} onPress={vm.refresh}><Icon color={colors.primary} size={24} source="refresh" /></Pressable> : null}</View>
 
-        {vm.selectedProject ? (
-          <View style={styles.pathBar}>
-            <Pressable accessibilityLabel="Back" onPress={vm.goBack} style={[styles.backButton, { backgroundColor: colors.surface }]}><Icon color={colors.text} size={22} source="chevron-left" /></Pressable>
-            <View style={styles.pathCopy}><Text numberOfLines={1} style={[styles.pathTitle, { color: colors.text }]}>{vm.breadcrumbs.at(-1)?.name ?? vm.selectedProject.shortName}</Text><Text style={[styles.pathMeta, { color: colors.textMuted }]}>{vm.breadcrumbs.length ? `${vm.breadcrumbs.length} folders deep` : 'Project files'}</Text></View>
-          </View>
-        ) : null}
+        {vm.selectedProject ? <View style={styles.pathBar}><Pressable accessibilityLabel="Back" onPress={() => { clearSelection(); void vm.goBack(); }} style={[styles.backButton, { backgroundColor: colors.surface }]}><Icon color={colors.text} size={22} source="chevron-left" /></Pressable><View style={styles.pathCopy}><Text numberOfLines={1} style={[styles.pathTitle, { color: colors.text }]}>{vm.breadcrumbs.at(-1)?.name ?? vm.selectedProject.shortName}</Text><Text style={[styles.pathMeta, { color: colors.textMuted }]}>{vm.breadcrumbs.length ? `${vm.breadcrumbs.length} folders deep` : 'Project files'}</Text></View></View> : null}
+        {vm.selectedProject ? <View style={styles.explorerTools}><View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.border }]}><Icon color={colors.textMuted} size={20} source="magnify" /><TextInput accessibilityLabel="Search in folder" autoCapitalize="none" autoCorrect={false} onChangeText={setSearchQuery} placeholder="Search in folder…" placeholderTextColor={colors.textMuted} style={[styles.searchInput, { color: colors.text }]} value={searchQuery} />{searchQuery ? <Pressable accessibilityLabel="Clear search" hitSlop={8} onPress={() => setSearchQuery('')}><Icon color={colors.textMuted} size={19} source="close-circle" /></Pressable> : null}</View></View> : null}
+        {vm.selectedProject && resources.length ? <View style={styles.displayBar}><View style={styles.displayLeft}><Pressable accessibilityLabel={allVisibleSelected ? 'Clear visible selection' : 'Select all visible items'} onPress={toggleSelectAll} style={[styles.selectAll, { backgroundColor: colors.surface, borderColor: colors.border }]}><Icon color={allVisibleSelected ? colors.primary : colors.textMuted} size={20} source={allVisibleSelected ? 'checkbox-marked' : 'checkbox-blank-outline'} /><Text style={[styles.selectAllText, { color: colors.text }]}>{allVisibleSelected ? 'Clear' : 'Select all'}</Text></Pressable><Text style={[styles.itemCount, { color: colors.textMuted }]}>{visibleResources.length} {visibleResources.length === 1 ? 'item' : 'items'}</Text></View><View accessibilityRole="tablist" style={[styles.viewSwitch, { backgroundColor: colors.surface, borderColor: colors.border }]}>{(['list', 'grid'] as const).map((mode) => <Pressable accessibilityLabel={`${mode} view`} accessibilityRole="tab" accessibilityState={{ selected: viewMode === mode }} key={mode} onPress={() => setViewMode(mode)} style={[styles.viewButton, { backgroundColor: viewMode === mode ? colors.surfaceMuted : 'transparent' }]}><Icon color={viewMode === mode ? colors.primary : colors.textMuted} size={21} source={mode === 'list' ? 'view-list-outline' : 'view-grid-outline'} /></Pressable>)}</View></View> : null}
+        {selectedResources.length ? <View style={[styles.selectionBar, { backgroundColor: colors.surface, borderColor: colors.border }]}><Pressable accessibilityLabel="Clear selection" onPress={clearSelection} style={styles.selectionCount}><Icon color={colors.primary} size={19} source="close" /><Text style={[styles.selectionText, { color: colors.text }]}>{selectedResources.length} selected</Text></Pressable><View style={styles.selectionActions}>{!isReadOnly ? <><ToolbarAction icon="content-copy" label="Copy" onPress={() => openTransfer('copy')} /><ToolbarAction icon="folder-move-outline" label="Move" onPress={() => openTransfer('move')} /></> : null}{selectedResources.length === 1 ? <ToolbarAction icon="dots-horizontal" label="More" onPress={() => { setInitialMode('actions'); setActionResources(selectedResources); }} /> : null}</View></View> : null}
 
-        {vm.isLoading ? (
-          <View style={styles.state}><ActivityIndicator color={colors.primary} /><Text style={[styles.stateText, { color: colors.textMuted }]}>Loading files…</Text></View>
-        ) : vm.error ? (
-          <State icon="cloud-alert-outline" message={vm.error} title="Couldn’t load files" />
-        ) : !serviceId ? (
-          <State icon="apps" message="Open Home and select a service to browse its projects and folders." title="Select a service" />
-        ) : !vm.selectedProject ? (
-          <ProjectList onSelect={vm.selectProject} projects={vm.projects} />
-        ) : vm.listing && vm.listing.folders.length + vm.listing.files.length > 0 ? (
-          <View style={styles.items}>
-            {vm.listing.folders.map((folder) => <FolderRow folder={folder} key={folder.id} onActions={() => setSelectedResource({ item: folder, type: 'folder' })} onOpen={() => vm.openFolder(folder)} />)}
-            {vm.listing.files.map((file) => <FileRow file={file} key={file.id} onActions={() => setSelectedResource({ item: file, type: 'file' })} />)}
-          </View>
-        ) : (
-          <State icon="folder-open-outline" message="This folder doesn’t contain any folders or files yet." title="Folder is empty" />
-        )}
+        {vm.isLoading ? <State loading message="Loading files…" /> : vm.error ? <State icon="cloud-alert-outline" message={vm.error} title="Couldn’t load files" /> : !serviceId ? <State icon="apps" message="Open Home and select a service to browse its projects and folders." title="Select a service" /> : !vm.selectedProject ? <ProjectList onSelect={vm.selectProject} projects={vm.projects} /> : vm.listing && visibleResources.length > 0 ? <View style={[styles.items, viewMode === 'grid' && styles.gridItems]}>{visibleResources.map((resource) => <ResourceRow key={`${resource.type}-${resource.item.id}`} onActions={() => { setInitialMode(isReadOnly ? 'actions' : 'share'); setActionResources([resource]); }} onLongPress={() => toggleSelection(resource)} onPress={() => selectedIds.size ? toggleSelection(resource) : resource.type === 'folder' ? vm.openFolder(resource.item as DriveFolder) : toggleSelection(resource)} onSelect={() => toggleSelection(resource)} resource={resource} selected={selectedIds.has(resource.item.id)} viewMode={viewMode} />)}</View> : <State icon={searchQuery ? 'file-search-outline' : 'folder-open-outline'} message={searchQuery ? `No items in this folder match “${searchQuery.trim()}”.` : 'This folder doesn’t contain any folders or files yet.'} title={searchQuery ? 'No results' : 'Folder is empty'} />}
       </View>
 
-      {selectedResource && vm.selectedProject ? (
-        <ResourceActionModal onClose={() => setSelectedResource(undefined)} onCopied={vm.refresh} projectId={vm.selectedProject.projectId} resource={selectedResource} serviceId={vm.selectedProject.serviceId} />
-      ) : null}
+      {actionResources?.length && vm.selectedProject ? <ResourceActionModal accessMode={accessMode} initialMode={initialMode} onClose={() => setActionResources(undefined)} onCompleted={() => { clearSelection(); void vm.refresh(); }} projectId={vm.selectedProject.projectId} resources={actionResources} serviceId={vm.selectedProject.serviceId} /> : null}
     </ScrollView>
   );
 }
 
-function ProjectList({ onSelect, projects }: { onSelect: (project: DriveProject) => void; projects: DriveProject[] }) {
-  const { theme } = useAppTheme();
-  return <View style={styles.projectArea}><Text style={[styles.sectionLabel, { color: theme.colors.textMuted }]}>PROJECTS</Text>{projects.length ? projects.map((project) => <Pressable key={project.id} onPress={() => onSelect(project)} style={({ pressed }) => [styles.projectCard, { backgroundColor: pressed ? theme.colors.surfaceMuted : theme.colors.surface, borderColor: theme.colors.border }]}><View style={[styles.projectIcon, { backgroundColor: `${theme.colors.primary}14` }]}><Icon color={theme.colors.primary} size={25} source="folder-star-outline" /></View><View style={styles.projectCopy}><Text numberOfLines={2} style={[styles.projectName, { color: theme.colors.text }]}>{project.shortName}</Text><Text numberOfLines={2} style={[styles.projectTitle, { color: theme.colors.textMuted }]}>{project.title}</Text></View><Icon color={theme.colors.textMuted} size={21} source="chevron-right" /></Pressable>) : <State icon="folder-search-outline" message="No projects are available for this service." title="No projects" />}</View>;
+function ProjectList({ onSelect, projects }: { onSelect: (project: DriveProject) => void; projects: DriveProject[] }) { const { theme } = useAppTheme(); return <View style={styles.projectArea}><Text style={[styles.sectionLabel, { color: theme.colors.textMuted }]}>PROJECTS</Text>{projects.length ? projects.map((project) => <Pressable key={project.id} onPress={() => onSelect(project)} style={({ pressed }) => [styles.projectCard, { backgroundColor: pressed ? theme.colors.surfaceMuted : theme.colors.surface, borderColor: theme.colors.border }]}><View style={[styles.itemIcon, { backgroundColor: `${theme.colors.primary}14` }]}><Icon color={theme.colors.primary} size={25} source="folder-star-outline" /></View><View style={styles.itemCopy}><Text numberOfLines={2} style={[styles.itemName, { color: theme.colors.text }]}>{project.shortName}</Text><Text numberOfLines={2} style={[styles.itemMeta, { color: theme.colors.textMuted }]}>{project.title}</Text></View><Icon color={theme.colors.textMuted} size={21} source="chevron-right" /></Pressable>) : <State icon="folder-search-outline" message="No projects are available for this service." title="No projects" />}</View>; }
+
+function ResourceRow({ onActions, onLongPress, onPress, onSelect, resource, selected, viewMode }: { onActions: () => void; onLongPress: () => void; onPress: () => void; onSelect: () => void; resource: SelectedResource; selected: boolean; viewMode: ViewMode }) {
+  const { theme } = useAppTheme(); const { colors } = theme; const isFolder = resource.type === 'folder'; const item = resource.item; const file = !isFolder ? item as DriveFile : undefined; const meta = isFolder ? `${(item as DriveFolder).childrenCount ?? '—'} items` : formatSize(file!.size); const visual = isFolder ? { color: (item as DriveFolder).color || '#F5B700', icon: 'folder' } : getFileVisual(file!); const isGrid = viewMode === 'grid';
+  return <View style={[styles.itemRow, isGrid && styles.gridCard, { backgroundColor: selected ? `${colors.primary}12` : colors.surface, borderColor: selected ? colors.primary : colors.border }]}><Pressable accessibilityLabel={selected ? `Deselect ${item.name}` : `Select ${item.name}`} accessibilityRole="checkbox" accessibilityState={{ checked: selected }} hitSlop={8} onPress={onSelect} style={[styles.checkbox, isGrid && styles.gridCheckbox]}><Icon color={selected ? colors.primary : colors.textMuted} size={23} source={selected ? 'checkbox-marked' : 'checkbox-blank-outline'} /></Pressable><Pressable accessibilityRole="button" onLongPress={onLongPress} onPress={onPress} style={[styles.itemMain, isGrid && styles.gridMain]}><View style={[styles.itemIcon, isGrid && styles.gridIcon, { backgroundColor: `${visual.color}18` }]}><Icon color={visual.color} size={isGrid ? 38 : 25} source={visual.icon} /></View><View style={[styles.itemCopy, isGrid && styles.gridCopy]}><Text numberOfLines={isGrid ? 2 : 2} style={[styles.itemName, isGrid && styles.gridName, { color: colors.text }]}>{item.name}</Text><Text numberOfLines={1} style={[styles.itemMeta, { color: colors.textMuted }]}>{meta}</Text></View></Pressable><Pressable accessibilityLabel={`Actions for ${item.name}`} hitSlop={8} onPress={onActions} style={[styles.more, isGrid && styles.gridMore]}><Icon color={colors.textMuted} size={22} source="dots-horizontal" /></Pressable></View>;
 }
 
-function FolderRow({ folder, onActions, onOpen }: { folder: DriveFolder; onActions: () => void; onOpen: () => void }) {
-  const { theme } = useAppTheme();
-  return <View style={[styles.itemRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}><Pressable accessibilityRole="button" onPress={onOpen} style={styles.itemMain}><View style={[styles.itemIcon, { backgroundColor: `${folder.color || theme.colors.primary}18` }]}><Icon color={folder.color || theme.colors.primary} size={26} source="folder" /></View><View style={styles.itemCopy}><Text numberOfLines={2} style={[styles.itemName, { color: theme.colors.text }]}>{folder.name}</Text><Text style={[styles.itemMeta, { color: theme.colors.textMuted }]}>{folder.childrenCount != null ? `${folder.childrenCount} items` : 'Folder'}</Text></View></Pressable><Pressable accessibilityLabel={`Actions for ${folder.name}`} hitSlop={8} onPress={onActions} style={styles.more}><Icon color={theme.colors.textMuted} size={22} source="dots-horizontal" /></Pressable></View>;
-}
-
-function FileRow({ file, onActions }: { file: DriveFile; onActions: () => void }) {
-  const { theme } = useAppTheme();
-  const size = file.size < 1024 * 1024 ? `${Math.max(1, Math.round(file.size / 1024))} KB` : `${(file.size / 1024 / 1024).toFixed(1)} MB`;
-  const icon = file.mimeType.startsWith('image/') ? 'file-image-outline' : file.mimeType.includes('pdf') ? 'file-pdf-box' : 'file-document-outline';
-  return <View style={[styles.itemRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}><View style={styles.itemMain}><View style={[styles.itemIcon, { backgroundColor: theme.colors.surfaceMuted }]}><Icon color={theme.colors.primary} size={25} source={icon} /></View><View style={styles.itemCopy}><Text numberOfLines={2} style={[styles.itemName, { color: theme.colors.text }]}>{file.name}</Text><Text style={[styles.itemMeta, { color: theme.colors.textMuted }]}>{size}</Text></View></View><Pressable accessibilityLabel={`Actions for ${file.name}`} hitSlop={8} onPress={onActions} style={styles.more}><Icon color={theme.colors.textMuted} size={22} source="dots-horizontal" /></Pressable></View>;
-}
-
-function State({ icon, message, title }: { icon: string; message: string; title: string }) {
-  const { theme } = useAppTheme();
-  return <View style={styles.state}><View style={[styles.stateIcon, { backgroundColor: theme.colors.surfaceMuted }]}><Icon color={theme.colors.primary} size={30} source={icon} /></View><Text style={[styles.stateTitle, { color: theme.colors.text }]}>{title}</Text><Text selectable style={[styles.stateText, { color: theme.colors.textMuted }]}>{message}</Text></View>;
+function ToolbarAction({ icon, label, onPress }: { icon: string; label: string; onPress: () => void }) { const { theme } = useAppTheme(); return <Pressable accessibilityLabel={label} onPress={onPress} style={styles.toolbarAction}><Icon color={theme.colors.primary} size={20} source={icon} /><Text style={[styles.toolbarLabel, { color: theme.colors.primary }]}>{label}</Text></Pressable>; }
+function State({ icon, loading, message, title }: { icon?: string; loading?: boolean; message: string; title?: string }) { const { theme } = useAppTheme(); return <View style={styles.state}>{loading ? <ActivityIndicator color={theme.colors.primary} /> : icon ? <View style={[styles.stateIcon, { backgroundColor: theme.colors.surfaceMuted }]}><Icon color={theme.colors.primary} size={30} source={icon} /></View> : null}{title ? <Text style={[styles.stateTitle, { color: theme.colors.text }]}>{title}</Text> : null}<Text selectable style={[styles.stateText, { color: theme.colors.textMuted }]}>{message}</Text></View>; }
+function formatSize(size: number) { return size < 1024 * 1024 ? `${Math.max(1, Math.round(size / 1024))} KB` : `${(size / 1024 / 1024).toFixed(1)} MB`; }
+function getFileVisual(file: DriveFile) {
+  const mime = file.mimeType.toLocaleLowerCase();
+  const extension = file.name.split('.').at(-1)?.toLocaleLowerCase() ?? '';
+  if (mime.includes('pdf') || extension === 'pdf') return { color: '#E5484D', icon: 'file-pdf-box' };
+  if (mime.startsWith('image/')) return { color: '#8E5CD9', icon: 'file-image' };
+  if (mime.startsWith('video/')) return { color: '#D6409F', icon: 'file-video' };
+  if (mime.startsWith('audio/')) return { color: '#7C66DC', icon: 'file-music' };
+  if (mime.includes('spreadsheet') || mime.includes('excel') || ['csv', 'xls', 'xlsx'].includes(extension)) return { color: '#2E8B57', icon: 'file-excel' };
+  if (mime.includes('presentation') || mime.includes('powerpoint') || ['ppt', 'pptx'].includes(extension)) return { color: '#D65A31', icon: 'file-powerpoint' };
+  if (mime.includes('word') || ['doc', 'docx'].includes(extension)) return { color: '#2B6CB0', icon: 'file-word-box' };
+  if (mime.includes('zip') || mime.includes('compressed') || ['7z', 'rar', 'tar', 'zip'].includes(extension)) return { color: '#B7791F', icon: 'folder-zip' };
+  if (mime.includes('json') || mime.includes('javascript') || mime.includes('xml') || ['css', 'html', 'js', 'json', 'ts', 'tsx', 'xml'].includes(extension)) return { color: '#008F8C', icon: 'file-code' };
+  if (mime.startsWith('text/')) return { color: '#5C7080', icon: 'file-document-edit-outline' };
+  return { color: '#4C7BD9', icon: 'file-document-outline' };
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 }, scrollContent: { alignItems: 'center', paddingBottom: 32 }, content: { width: '100%' }, header: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' }, headerCopy: { flex: 1, gap: 2 }, title: { fontFamily: fontFamilies.bold, fontSize: 28, letterSpacing: -0.6 }, subtitle: { fontFamily: fontFamilies.regular, fontSize: 13 },
   pathBar: { alignItems: 'center', flexDirection: 'row', gap: 11, paddingTop: 20 }, backButton: { alignItems: 'center', borderRadius: 14, height: 44, justifyContent: 'center', width: 44 }, pathCopy: { flex: 1 }, pathTitle: { fontFamily: fontFamilies.semibold, fontSize: 15 }, pathMeta: { fontFamily: fontFamilies.regular, fontSize: 11, paddingTop: 2 },
-  projectArea: { gap: 9, paddingTop: 27 }, sectionLabel: { fontFamily: fontFamilies.semibold, fontSize: 11, letterSpacing: 0.8 }, projectCard: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 12, minHeight: 88, padding: 13 }, projectIcon: { alignItems: 'center', borderRadius: 14, height: 50, justifyContent: 'center', width: 50 }, projectCopy: { flex: 1, gap: 3 }, projectName: { fontFamily: fontFamilies.semibold, fontSize: 15, lineHeight: 20 }, projectTitle: { fontFamily: fontFamilies.regular, fontSize: 11, lineHeight: 16 },
-  items: { gap: 8, paddingTop: 22 }, itemRow: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 17, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', minHeight: 74, paddingLeft: 11 }, itemMain: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 12, minHeight: 72 }, itemIcon: { alignItems: 'center', borderRadius: 13, height: 48, justifyContent: 'center', width: 48 }, itemCopy: { flex: 1, gap: 3 }, itemName: { fontFamily: fontFamilies.semibold, fontSize: 14, lineHeight: 19 }, itemMeta: { fontFamily: fontFamilies.regular, fontSize: 11 }, more: { alignItems: 'center', height: 54, justifyContent: 'center', width: 48 },
+  explorerTools: { paddingTop: 14 }, search: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 8, minHeight: 50, paddingHorizontal: 13, width: '100%' }, searchInput: { flex: 1, fontFamily: fontFamilies.regular, fontSize: 14 }, selectAll: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 12, borderWidth: 1, flexDirection: 'row', gap: 6, minHeight: 38, paddingHorizontal: 10 }, selectAllText: { fontFamily: fontFamilies.semibold, fontSize: 11 },
+  displayBar: { alignItems: 'center', flexDirection: 'row', gap: 10, justifyContent: 'space-between', minHeight: 48, paddingTop: 10 }, displayLeft: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 10 }, itemCount: { fontFamily: fontFamilies.semibold, fontSize: 11, fontVariant: ['tabular-nums'] }, viewSwitch: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 13, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 2, padding: 3 }, viewButton: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 10, height: 36, justifyContent: 'center', width: 42 },
+  selectionBar: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', justifyContent: 'space-between', marginTop: 14, minHeight: 58, paddingHorizontal: 8 }, selectionCount: { alignItems: 'center', flexDirection: 'row', gap: 5, minHeight: 44, paddingHorizontal: 5 }, selectionText: { fontFamily: fontFamilies.semibold, fontSize: 13, fontVariant: ['tabular-nums'] }, selectionActions: { alignItems: 'center', flexDirection: 'row' }, toolbarAction: { alignItems: 'center', gap: 2, justifyContent: 'center', minHeight: 48, minWidth: 54, paddingHorizontal: 5 }, toolbarLabel: { fontFamily: fontFamilies.semibold, fontSize: 9.5 },
+  projectArea: { gap: 9, paddingTop: 27 }, sectionLabel: { fontFamily: fontFamilies.semibold, fontSize: 11, letterSpacing: 0.8 }, projectCard: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 12, minHeight: 88, padding: 13 }, items: { gap: 8, paddingTop: 14 }, gridItems: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, itemRow: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 17, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', minHeight: 74, paddingLeft: 7 }, gridCard: { alignItems: 'stretch', minHeight: 178, paddingLeft: 0, position: 'relative', width: '48.5%' }, checkbox: { alignItems: 'center', height: 48, justifyContent: 'center', width: 38 }, gridCheckbox: { left: 5, position: 'absolute', top: 4, zIndex: 2 }, itemMain: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 12, minHeight: 72 }, gridMain: { flexDirection: 'column', gap: 9, justifyContent: 'center', paddingHorizontal: 12, paddingTop: 17 }, itemIcon: { alignItems: 'center', borderRadius: 13, height: 48, justifyContent: 'center', width: 48 }, gridIcon: { borderRadius: 18, height: 76, width: 76 }, itemCopy: { flex: 1, gap: 3 }, gridCopy: { alignItems: 'center', flex: 0 }, itemName: { fontFamily: fontFamilies.semibold, fontSize: 14, lineHeight: 19 }, gridName: { fontSize: 13, lineHeight: 17, textAlign: 'center' }, itemMeta: { fontFamily: fontFamilies.regular, fontSize: 11, lineHeight: 16 }, more: { alignItems: 'center', height: 54, justifyContent: 'center', width: 48 }, gridMore: { position: 'absolute', right: 0, top: 1 },
   state: { alignItems: 'center', gap: 8, justifyContent: 'center', minHeight: 300, paddingHorizontal: 24 }, stateIcon: { alignItems: 'center', borderRadius: 20, height: 68, justifyContent: 'center', width: 68 }, stateTitle: { fontFamily: fontFamilies.semibold, fontSize: 17, paddingTop: 5 }, stateText: { fontFamily: fontFamilies.regular, fontSize: 13, lineHeight: 19, maxWidth: 310, textAlign: 'center' },
 });

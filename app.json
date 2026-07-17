@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "oneDriveVensarApp",
+    "name": "Vensar OneDrive",
     "slug": "oneDriveVensarApp",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -40,6 +40,19 @@
       "expo-web-browser",
       "expo-image",
       "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F3F8FC",
+          "image": "./assets/transparent-splash.svg",
+          "imageWidth": 1,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#0F172A",
+            "image": "./assets/transparent-splash.svg"
+          }
+        }
+      ],
       [
         "expo-alternate-app-icons",
         [

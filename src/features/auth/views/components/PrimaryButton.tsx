@@ -12,7 +12,7 @@ const buttonHeight = 54;
 export function PrimaryButton({ disabled, loading = false, onPress, title }: PrimaryButtonProps) {
   const [availableWidth, setAvailableWidth] = useState(0);
   const progress = useSharedValue(loading ? 1 : 0);
-  const { theme } = useAppTheme();
+  const { colorScheme, theme } = useAppTheme();
   const { colors } = theme;
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export function PrimaryButton({ disabled, loading = false, onPress, title }: Pri
 
   return (
     <View onLayout={(event) => setAvailableWidth(event.nativeEvent.layout.width)} style={styles.track}>
-      <Animated.View style={[styles.animatedButton, { backgroundColor: colors.primary, opacity: disabled ? 0.45 : 1 }, buttonStyle]}>
+      <Animated.View style={[styles.animatedButton, { backgroundColor: colors.primary, boxShadow: colorScheme === 'dark' ? '0 10px 24px rgba(0, 0, 0, 0.34)' : '0 10px 24px rgba(0, 120, 212, 0.24)', opacity: disabled ? 0.45 : 1 }, buttonStyle]}>
         <Pressable
           accessibilityRole="button"
           disabled={disabled || loading}
@@ -49,7 +49,7 @@ export function PrimaryButton({ disabled, loading = false, onPress, title }: Pri
 
 const styles = StyleSheet.create({
   track: { alignItems: 'center', height: buttonHeight, width: '100%' },
-  animatedButton: { boxShadow: '0 10px 24px rgba(0, 120, 212, 0.24)', height: buttonHeight, overflow: 'hidden' },
+  animatedButton: { height: buttonHeight, overflow: 'hidden' },
   pressable: { alignItems: 'center', height: '100%', justifyContent: 'center', width: '100%' },
   spinner: { position: 'absolute' },
   text: { fontFamily: fontFamilies.semibold, fontSize: 16, paddingHorizontal: 24 },

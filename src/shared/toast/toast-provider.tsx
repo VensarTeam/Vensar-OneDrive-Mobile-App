@@ -59,7 +59,7 @@ export function ToastProvider({ children }: PropsWithChildren) {
 
 function ToastViewport({ onDismiss, toast }: { onDismiss: () => void; toast: ToastState | null }) {
   const insets = useSafeAreaInsets();
-  const { theme } = useAppTheme();
+  const { colorScheme, theme } = useAppTheme();
 
   useEffect(() => {
     if (!toast) return;
@@ -84,7 +84,7 @@ function ToastViewport({ onDismiss, toast }: { onDismiss: () => void; toast: Toa
             {
               backgroundColor: theme.colors.surface,
               borderColor: theme.colors.border,
-              boxShadow: '0 12px 32px rgba(15, 23, 42, 0.18)',
+              boxShadow: colorScheme === 'dark' ? '0 12px 32px rgba(0, 0, 0, 0.42)' : '0 12px 32px rgba(15, 23, 42, 0.18)',
             },
           ]}
         >

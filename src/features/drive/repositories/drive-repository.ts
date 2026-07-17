@@ -83,6 +83,23 @@ export function copyResource(
   );
 }
 
+export function moveResource(
+  resourceType: DriveResourceType,
+  resourceId: string,
+  targetFolderId: string,
+) {
+  const endpoint = resourceType === 'folder' ? env.endpoints.folders : env.endpoints.files;
+  return authenticatedRequest<DriveFolder | DriveFile>(
+    `${endpoint}/${encodeURIComponent(resourceId)}`,
+    {
+      method: 'PATCH',
+      body: resourceType === 'folder'
+        ? { parentId: targetFolderId }
+        : { folderId: targetFolderId },
+    },
+  );
+}
+
 export function searchShareUsers(query: string) {
   return authenticatedRequest<ShareUser[]>(
     `${env.endpoints.sharing}/users${queryString({ q: query.trim() })}`,

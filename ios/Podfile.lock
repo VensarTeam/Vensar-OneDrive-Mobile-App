@@ -90,6 +90,10 @@ PODS:
     - RNWorklets
   - ExpoSecureStore (57.0.0):
     - ExpoModulesCore
+  - ExpoSharing (57.0.6):
+    - ExpoModulesCore
+  - ExpoSplashScreen (57.0.4):
+    - ExpoModulesCore
   - ExpoSystemUI (57.0.0):
     - ExpoModulesCore
   - ExpoWebBrowser (57.0.0):
@@ -2031,6 +2035,28 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - RNGestureHandler (2.32.0):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - RNReanimated (4.5.0):
     - hermes-engine
     - RCTRequired
@@ -2271,6 +2297,8 @@ DEPENDENCIES:
   - ExpoModulesWorklets (from `../node_modules/expo-modules-core/ExpoModulesWorklets.podspec`)
   - ExpoModulesWorkletsAdapter (from `../node_modules/expo-modules-core`)
   - ExpoSecureStore (from `../node_modules/expo-secure-store/ios`)
+  - ExpoSharing (from `../node_modules/expo-sharing/ios`)
+  - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - ExpoSystemUI (from `../node_modules/expo-system-ui/ios`)
   - ExpoWebBrowser (from `../node_modules/expo-web-browser/ios`)
   - FBLazyVector (from `../node_modules/react-native/Libraries/FBLazyVector`)
@@ -2351,6 +2379,7 @@ DEPENDENCIES:
   - ReactNativeDependencies (from `../node_modules/react-native/third-party-podspecs/ReactNativeDependencies.podspec`)
   - "RNCAsyncStorage (from `../node_modules/@react-native-async-storage/async-storage`)"
   - "RNDateTimePicker (from `../node_modules/@react-native-community/datetimepicker`)"
+  - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNWorklets (from `../node_modules/react-native-worklets`)
@@ -2397,6 +2426,10 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-modules-core"
   ExpoSecureStore:
     :path: "../node_modules/expo-secure-store/ios"
+  ExpoSharing:
+    :path: "../node_modules/expo-sharing/ios"
+  ExpoSplashScreen:
+    :path: "../node_modules/expo-splash-screen/ios"
   ExpoSystemUI:
     :path: "../node_modules/expo-system-ui/ios"
   ExpoWebBrowser:
@@ -2556,6 +2589,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-async-storage/async-storage"
   RNDateTimePicker:
     :path: "../node_modules/@react-native-community/datetimepicker"
+  RNGestureHandler:
+    :path: "../node_modules/react-native-gesture-handler"
   RNReanimated:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
@@ -2586,6 +2621,8 @@ SPEC CHECKSUMS:
   ExpoModulesWorklets: f6b71b8ddeb8dceb2ce3504544ecfbd708ba79a2
   ExpoModulesWorkletsAdapter: 4b63d6cf4db0897d2ec530d4f3d51eaaed319fd6
   ExpoSecureStore: be2276d312c1f213605c0864772510239605ec37
+  ExpoSharing: 68cd2102fb8693316d703844e9d733747095ee4d
+  ExpoSplashScreen: a0e6d83ad9642f133aa11e83c880064f57c32d59
   ExpoSystemUI: 4f343f83e81951d737b199ac9c0d9db0d577f942
   ExpoWebBrowser: 32dfd25ad5d384028137a0de71991f28663562e0
   FBLazyVector: b3e7ad108f0d882e30445c5527d774e3fd432f3d
@@ -2665,6 +2702,7 @@ SPEC CHECKSUMS:
   ReactNativeDependencies: fa0a54b3f5319ae0e3b9aff32bfee7a424b88e66
   RNCAsyncStorage: 2ad919e88b8bc2cd80e8697ce66d04d006743283
   RNDateTimePicker: 7b2738f1e595f83c14580a11c476872755c5befc
+  RNGestureHandler: 92172e79df6e88e0e93b6341f9dcd8b5a02746ba
   RNReanimated: a9bf68fb5f19ce1c363b7d1413dcf8ee323185b8
   RNScreens: 991cc417cd396602a6cf59a42139e5a9d91462a9
   RNWorklets: ae7f2b95d75b903387e6359583f2fd67bc9a93ff

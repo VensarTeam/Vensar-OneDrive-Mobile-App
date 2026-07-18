@@ -3,6 +3,7 @@ import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-c
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { configureFonts, MD3DarkTheme, MD3LightTheme, PaperProvider } from 'react-native-paper';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { RootView } from './src/bootstrap/RootView';
 import { useSystemAppIcon } from './src/core/hooks/useSystemAppIcon';
@@ -56,10 +57,12 @@ export default function App() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <AppThemeProvider>
-        <ThemedApp onSplashFinished={() => setShowSplash(false)} showSplash={showSplash} />
-      </AppThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <AppThemeProvider>
+          <ThemedApp onSplashFinished={() => setShowSplash(false)} showSplash={showSplash} />
+        </AppThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

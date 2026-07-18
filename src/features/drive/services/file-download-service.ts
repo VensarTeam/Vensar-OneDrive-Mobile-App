@@ -1,5 +1,5 @@
 import { fetch } from 'expo/fetch';
-import { Directory } from 'expo-file-system';
+import { Directory, File, Paths } from 'expo-file-system';
 
 import { ApiError } from '../../../core/api/ApiError';
 import { env } from '../../../core/config/env';
@@ -9,6 +9,7 @@ import { getPreference, removePreference, setPreference } from '../../../core/st
 
 const downloadDirectoryName = 'VensarOneDrive';
 const downloadParentKey = 'downloads.parent-directory-uri';
+const previewDirectoryName = 'VensarPreview';
 
 function safeFileName(name: string) {
   return name.replace(/[\\/:*?"<>|]/g, '_');
@@ -52,20 +53,31 @@ async function getDownloadDirectory() {
   return ensureVensarDirectory(selectedParent);
 }
 
-export async function downloadAndOpenFile(fileId: string, fileName: string, mimeType: string) {
+async function fetchFileBytes(fileId: string) {
   const token = await getSecureItem(storageKeys.authToken);
   if (!token) throw new ApiError('Your session has expired. Sign in again.', 401);
-
-  const directory = await getDownloadDirectory();
 
   const response = await fetch(
     new URL(`${env.endpoints.files}/${encodeURIComponent(fileId)}/download`, env.apiBaseUrl),
     { headers: { Authorization: `Bearer ${token}` } },
   );
   if (!response.ok) throw new ApiError('Unable to download this file.', response.status);
+  return response.bytes();
+}
 
+export async function prepareFileForPreview(fileId: string, fileName: string, mimeType: string) {
+  const directory = new Directory(Paths.cache, previewDirectoryName);
+  directory.create({ idempotent: true, intermediates: true });
+  const file = new File(directory, safeFileName(fileName));
+  file.create({ intermediates: true, overwrite: true });
+  file.write(await fetchFileBytes(fileId));
+  return { fileName: file.name, mimeType, uri: file.uri };
+}
+
+export async function downloadAndOpenFile(fileId: string, fileName: string, mimeType: string) {
+  const directory = await getDownloadDirectory();
   const savedName = getAvailableFileName(directory, safeFileName(fileName));
   const file = directory.createFile(savedName, mimeType);
-  file.write(await response.bytes());
+  file.write(await fetchFileBytes(fileId));
   return { directoryName: downloadDirectoryName, fileName: savedName, uri: file.uri };
 }

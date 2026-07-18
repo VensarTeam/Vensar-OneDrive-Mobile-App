@@ -65,7 +65,7 @@ export function OtpScreen({ navigation, route }: Props) {
           <Animated.View
             style={[
               styles.codeMorph,
-              { backgroundColor: colors.surfaceMuted, borderColor: colors.primary },
+              { backgroundColor: colors.surface, borderColor: colors.primary },
               codeMorphStyle,
             ]}
           >
@@ -76,7 +76,7 @@ export function OtpScreen({ navigation, route }: Props) {
                   style={[
                     styles.digit,
                     {
-                      backgroundColor: colors.surfaceMuted,
+                      backgroundColor: colors.surface,
                       borderColor: vm.error ? colors.danger : index === vm.otp.length ? colors.primary : colors.border,
                     },
                   ]}

@@ -41,7 +41,7 @@ const serviceIcons: Record<string, string> = {
   tunnels: 'tunnel-outline',
 };
 
-const accents = ['#0078D4', '#6B5CE7', '#008272', '#C239B3', '#D83B01', '#107C10'];
+const accents = ['#062F7D', '#4F46E5'];
 
 function getInitials(name: string) {
   return name
@@ -65,11 +65,13 @@ export function HomeScreen() {
   const { colors } = theme;
   const vm = useHomeViewModel();
   const { user } = useAuthSession();
-  const columns = layout.isCompact ? 2 : 3;
+  const columns = layout.isCompact ? 3 : 4;
   const displayName = user?.name || 'User';
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.surface }]}>
+    <View
+      style={[styles.screen, { backgroundColor: colors.background }]}
+    >
       <View style={[styles.contentInner, { maxWidth: layout.maxContentWidth }]}>
         <View
           style={[
@@ -126,7 +128,7 @@ export function HomeScreen() {
         <View
           style={[
             styles.search,
-            { backgroundColor: colors.background, borderColor: vm.searchQuery ? colors.primary : colors.border },
+            { backgroundColor: colors.surface, borderColor: vm.searchQuery ? colors.primary : colors.border },
           ]}
         >
           <Icon color={vm.searchQuery ? colors.primary : colors.textMuted} size={21} source="magnify" />
@@ -208,7 +210,6 @@ export function HomeScreen() {
                   columns={columns}
                   key={service.id}
                   onPress={() => navigation.navigate('Files', {
-                    permission: 'admin',
                     serviceId: service.serviceId,
                     serviceName: service.serviceName,
                   })}
@@ -224,36 +225,44 @@ export function HomeScreen() {
 }
 
 function ServiceCard({ columns, onPress, service }: { columns: number; onPress: () => void; service: Service }) {
-  const { theme } = useAppTheme();
+  const { colorScheme, theme } = useAppTheme();
   const accent = serviceAccent(service.serviceId);
+  const icon = serviceIcons[service.serviceIcon] ?? 'shape-outline';
 
   return (
     <Pressable
+      accessibilityHint="Opens projects and files for this service"
       accessibilityLabel={service.serviceName}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
         {
-          backgroundColor: pressed ? theme.colors.surfaceMuted : theme.colors.background,
+          backgroundColor: pressed ? theme.colors.surfaceMuted : theme.colors.surface,
           borderColor: pressed ? theme.colors.primary : theme.colors.border,
-          transform: [{ scale: pressed ? 0.985 : 1 }],
-          width: `${100 / columns - 1.6}%`,
+          boxShadow: colorScheme === 'dark' ? '0 7px 18px rgba(0, 0, 0, 0.22)' : '0 7px 18px rgba(27, 48, 78, 0.07)',
+          transform: [{ scale: pressed ? 0.975 : 1 }],
+          width: columns === 3 ? '31.5%' : '23.5%',
         },
       ]}
     >
-      <View style={[styles.serviceIcon, { backgroundColor: `${accent}14` }]}>
-        <Icon color={accent} size={28} source={serviceIcons[service.serviceIcon] ?? 'shape-outline'} />
+      <View style={styles.cornerIcon}>
+        <Icon color={`${accent}66`} size={21} source={icon} />
       </View>
-      <Text numberOfLines={2} selectable style={[styles.serviceName, { color: theme.colors.text }]}>
+      <View style={styles.folderIcon}>
+        <View style={[styles.folderTab, { backgroundColor: accent }]} />
+        <View style={[styles.folderFace, { backgroundColor: accent }]} />
+        <View style={styles.folderSymbol}>
+          <Icon color="#FFFFFF" size={25} source={icon} />
+        </View>
+      </View>
+      <Text
+        numberOfLines={2}
+        selectable
+        style={[styles.serviceName, { color: theme.colors.text }]}
+      >
         {service.serviceName}
       </Text>
-      <View style={styles.cardFooter}>
-        <Text numberOfLines={1} style={[styles.serviceCode, { color: theme.colors.textMuted }]}>
-          {service.serviceId.replaceAll('-', ' ')}
-        </Text>
-        <Icon color={theme.colors.textMuted} size={17} source="chevron-right" />
-      </View>
     </Pressable>
   );
 }
@@ -275,7 +284,7 @@ const styles = StyleSheet.create({
   avatarText: { fontFamily: fontFamilies.semibold, fontSize: 13 },
   avatarImage: { height: '100%', width: '100%' },
   hero: { gap: 5, paddingTop: 27 },
-  eyebrow: { fontFamily: fontFamilies.bold, fontSize: 11, letterSpacing: 1.3, lineHeight: 16 },
+  eyebrow: { fontFamily: fontFamilies.bold, fontSize: 14, letterSpacing: 1.3, lineHeight: 16 },
   heroTitle: { fontFamily: fontFamilies.bold, fontSize: 25, letterSpacing: -0.5, lineHeight: 32 },
   heroCopy: { fontFamily: fontFamilies.regular, fontSize: 14, lineHeight: 20 },
   search: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 10, marginTop: 22, minHeight: 54, paddingHorizontal: 15 },
@@ -283,12 +292,14 @@ const styles = StyleSheet.create({
   sectionHeader: { alignItems: 'baseline', flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 14, paddingTop: 27 },
   sectionTitle: { fontFamily: fontFamilies.bold, fontSize: 21, lineHeight: 27 },
   count: { fontFamily: fontFamilies.regular, fontSize: 12, fontVariant: ['tabular-nums'] },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  card: { borderCurve: 'continuous', borderRadius: 17, borderWidth: StyleSheet.hairlineWidth, gap: 11, minHeight: 158, padding: 14 },
-  serviceIcon: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 13, height: 48, justifyContent: 'center', width: 48 },
-  serviceName: { flex: 1, fontFamily: fontFamilies.semibold, fontSize: 15, lineHeight: 19 },
-  cardFooter: { alignItems: 'center', flexDirection: 'row', gap: 3 },
-  serviceCode: { flex: 1, fontFamily: fontFamilies.regular, fontSize: 10, textTransform: 'capitalize' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
+  card: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, justifyContent: 'flex-end', minHeight: 164, paddingBottom: 17, paddingHorizontal: 7, paddingTop: 29, position: 'relative' },
+  cornerIcon: { position: 'absolute', right: 10, top: 11 },
+  folderIcon: { height: 58, marginBottom: 18, position: 'relative', width: 67 },
+  folderTab: { borderRadius: 7, height: 20, left: 2, position: 'absolute', top: 1, width: 34 },
+  folderFace: { borderCurve: 'continuous', borderRadius: 8, bottom: 0, height: 48, left: 0, position: 'absolute', width: 67 },
+  folderSymbol: { alignItems: 'center', bottom: 4, height: 42, justifyContent: 'center', left: 0, position: 'absolute', width: 67 },
+  serviceName: { fontFamily: fontFamilies.semibold, fontSize: 13.5, lineHeight: 18, minHeight: 36, textAlign: 'center', width: '100%' },
   stateContainer: { alignItems: 'center', gap: 9, justifyContent: 'center', minHeight: 220, paddingHorizontal: 24 },
   errorState: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 20, borderWidth: 1, gap: 9, minHeight: 250, padding: 24 },
   stateIcon: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 14, height: 48, justifyContent: 'center', width: 48 },

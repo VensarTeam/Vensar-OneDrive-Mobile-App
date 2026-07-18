@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import Constants from 'expo-constants';
 import { Image } from 'expo-image';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
@@ -60,6 +61,7 @@ export function ProfileScreen() {
   const responsive = useResponsiveLayout();
   const { colorScheme, theme } = useAppTheme();
   const { colors } = theme;
+  const appVersion = Constants.expoConfig?.version ?? '1.0.0';
 
   const handleSignedOut = useCallback(() => {
     navigation.getParent<NativeStackNavigationProp<RootStackParamList>>()?.reset({
@@ -84,7 +86,7 @@ export function ProfileScreen() {
         {
           paddingBottom: insets.bottom + 30,
           paddingHorizontal: responsive.horizontalPadding,
-          paddingTop: insets.top + 14,
+          paddingTop: responsive.isCompact ? 8 : 16,
         },
       ]}
       contentInsetAdjustmentBehavior="automatic"
@@ -208,7 +210,9 @@ export function ProfileScreen() {
           )}
           <Text style={[styles.signOutText, { color: colors.danger }]}>Sign out</Text>
         </Pressable>
-        <Text style={[styles.footer, { color: colors.textMuted }]}>OneDrive by Vensar · Read-only access</Text>
+        <View style={styles.footer}>
+            <Text style={[styles.versionText, { color: colors.primary }]}>App Version {appVersion}</Text>
+        </View>
       </View>
     </ScrollView>
   );
@@ -220,7 +224,7 @@ const styles = StyleSheet.create({
   content: { alignSelf: 'center', width: '100%' },
   topBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', minHeight: 48 },
   pageTitle: { fontFamily: fontFamilies.bold, fontSize: 28, letterSpacing: -0.6 },
-  brandLogo: { height: 34, width: 112 },
+  brandLogo: { height: 44, width: 80},
   profileCard: {
     alignItems: 'center',
     borderCurve: 'continuous',
@@ -258,5 +262,8 @@ const styles = StyleSheet.create({
   appearanceContent: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 12, minHeight: 65, paddingHorizontal: 15 },
   signOutButton: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 17, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 10, justifyContent: 'center', marginTop: 27, minHeight: 54, paddingHorizontal: 18 },
   signOutText: { fontFamily: fontFamilies.semibold, fontSize: 15 },
-  footer: { fontFamily: fontFamilies.regular, fontSize: 11, paddingTop: 18, textAlign: 'center' },
+  footer: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 7, justifyContent: 'center', paddingTop: 18 },
+  footerText: { fontFamily: fontFamilies.regular, fontSize: 11 },
+  versionBadge: { borderCurve: 'continuous', borderRadius: 99, borderWidth: StyleSheet.hairlineWidth, paddingHorizontal: 8, paddingVertical: 4 },
+  versionText: { fontFamily: fontFamilies.semibold, fontSize: 16, fontVariant: ['tabular-nums'] },
 });

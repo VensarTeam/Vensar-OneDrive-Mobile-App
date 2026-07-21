@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Vensar OneDrive",
+    "name": "V Drive",
     "slug": "oneDriveVensarApp",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,7 +15,12 @@
       "bundleIdentifier": "com.rmehra831.oneDriveVensarApp"
     },
     "android": {
-      "icon": "./assets/android-icons/mipmap-xxxhdpi/ic_launcher.png",
+      "icon": "./assets/playstore-icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#FAFAFA"
+      },
+      "versionCode": 1,
       "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false,
       "package": "com.rmehra831.oneDriveVensarApp"

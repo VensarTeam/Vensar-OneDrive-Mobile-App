@@ -85,7 +85,7 @@ export function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.brand}>
             <Image
-              accessibilityLabel="OneDrive by Vensar"
+              accessibilityLabel="V Drive by Vensar"
               contentFit="contain"
               source={
                 colorScheme === 'dark'
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   servicesContent: { paddingBottom: 24 },
   header: { alignItems: 'center', flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
   brand: { flexShrink: 1, height: 54, justifyContent: 'center', transform: [{ translateX: -12 }], width: 144 },
-  brandLogo: { height: 54, width: 120 },
+  brandLogo: { height: 64, width: 64 },
   userGreeting: { alignItems: 'center', flexDirection: 'row', flexShrink: 0, gap: 10 },
   greetingCopy: { alignItems: 'flex-end', maxWidth: 104 },
   welcomeLabel: { fontFamily: fontFamilies.regular, fontSize: 11, lineHeight: 14 },

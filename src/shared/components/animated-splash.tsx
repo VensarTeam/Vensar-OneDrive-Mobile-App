@@ -36,7 +36,7 @@ export function AnimatedSplash({ onFinished }: { onFinished: () => void }) {
     <Animated.View pointerEvents="auto" style={[styles.screen, { backgroundColor: theme.colors.background }, screenStyle]}>
       <Animated.View style={logoStyle}>
         <Image
-          accessibilityLabel="Vensar OneDrive"
+          accessibilityLabel="V Drive by Vensar"
           contentFit="contain"
           source={colorScheme === 'dark' ? require('../../../assets/onedrive-vensar-dark.png') : require('../../../assets/onedrive-vensar-light.png')}
           style={styles.logo}
@@ -47,6 +47,6 @@ export function AnimatedSplash({ onFinished }: { onFinished: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  logo: { height: 157, width: 280 },
+  logo: { height: 190, width: 190 },
   screen: { alignItems: 'center', bottom: 0, justifyContent: 'center', left: 0, position: 'absolute', right: 0, top: 0, zIndex: 9999 },
 });

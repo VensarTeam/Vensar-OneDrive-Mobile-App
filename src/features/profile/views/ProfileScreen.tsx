@@ -97,7 +97,7 @@ export function ProfileScreen() {
         <View style={styles.topBar}>
           <Text accessibilityRole="header" style={[styles.pageTitle, { color: colors.text }]}>Account</Text>
           <Image
-            accessibilityLabel="OneDrive by Vensar"
+            accessibilityLabel="V Drive by Vensar"
             contentFit="contain"
             source={
               colorScheme === 'dark'
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   content: { alignSelf: 'center', width: '100%' },
   topBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', minHeight: 48 },
   pageTitle: { fontFamily: fontFamilies.bold, fontSize: 28, letterSpacing: -0.6 },
-  brandLogo: { height: 44, width: 80},
+  brandLogo: { height: 48, width: 48 },
   profileCard: {
     alignItems: 'center',
     borderCurve: 'continuous',

@@ -97,6 +97,16 @@ android {
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
+
+    // Generate compact per-ABI APKs and a universal ARM fallback APK.
+    splits {
+        abi {
+            enable true
+            reset()
+            include "armeabi-v7a", "arm64-v8a"
+            universalApk true
+        }
+    }
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -129,6 +139,17 @@ android {
     }
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
+    }
+
+    applicationVariants.all { variant ->
+        if (variant.buildType.name == "release") {
+            variant.outputs.all { output ->
+                def abi = output.getFilter(com.android.build.OutputFile.ABI)
+                def target = abi == "armeabi-v7a" ? "v7" :
+                    abi == "arm64-v8a" ? "v8" : "universal"
+                outputFileName = "Vensar-OneDrive-v${variant.versionName}-${target}.apk"
+            }
+        }
     }
 }
 

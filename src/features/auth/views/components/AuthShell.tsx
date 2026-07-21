@@ -51,7 +51,7 @@ export function AuthShell({ children, subtitle, title }: AuthShellProps) {
           <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, boxShadow: colorScheme === 'dark' ? '0 24px 70px rgba(0, 0, 0, 0.38)' : '0 24px 70px rgba(30, 76, 112, 0.13)', paddingHorizontal: responsive.isCompact ? 24 : 42 }]}>
             <View style={styles.brandLockup}>
               <Image
-                accessibilityLabel="OneDrive by Vensar"
+                accessibilityLabel="V Drive by Vensar"
                 contentFit="contain"
                 source={
                   colorScheme === 'dark'
@@ -99,8 +99,8 @@ const styles = StyleSheet.create({
   scrollContent: { alignItems: 'center', flexGrow: 1, justifyContent: 'center' },
   content: { maxWidth: 510, width: '100%' },
   card: { borderCurve: 'continuous', borderRadius: 28, borderWidth: 1, paddingBottom: 40, paddingTop: 36 },
-  brandLockup: { alignItems: 'center', alignSelf: 'center', height: 82, justifyContent: 'center', width: 230 },
-  logo: { height: 82, width: 230 },
+  brandLockup: { alignItems: 'center', alignSelf: 'center', height: 132, justifyContent: 'center', width: 132 },
+  logo: { height: 132, width: 132 },
   heading: { alignItems: 'center', gap: 9, paddingTop: 27 },
   title: { fontFamily: fontFamilies.bold, fontSize: 31, letterSpacing: -0.9, lineHeight: 38, textAlign: 'center' },
   subtitle: { fontFamily: fontFamilies.regular, fontSize: 15, lineHeight: 22, textAlign: 'center' },

@@ -247,13 +247,13 @@ function ServiceCard({ columns, onPress, service }: { columns: number; onPress: 
       ]}
     >
       <View style={styles.cornerIcon}>
-        <Icon color={`${accent}66`} size={21} source={icon} />
+        {/* <Icon color={`${accent}66`} size={18} source={icon} /> */}
       </View>
       <View style={styles.folderIcon}>
         <View style={[styles.folderTab, { backgroundColor: accent }]} />
         <View style={[styles.folderFace, { backgroundColor: accent }]} />
         <View style={styles.folderSymbol}>
-          <Icon color="#FFFFFF" size={25} source={icon} />
+          <Icon color="#FFFFFF" size={21} source={icon} />
         </View>
       </View>
       <Text
@@ -293,13 +293,13 @@ const styles = StyleSheet.create({
   sectionTitle: { fontFamily: fontFamilies.bold, fontSize: 21, lineHeight: 27 },
   count: { fontFamily: fontFamilies.regular, fontSize: 12, fontVariant: ['tabular-nums'] },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
-  card: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, justifyContent: 'flex-end', minHeight: 164, paddingBottom: 17, paddingHorizontal: 7, paddingTop: 29, position: 'relative' },
-  cornerIcon: { position: 'absolute', right: 10, top: 11 },
-  folderIcon: { height: 58, marginBottom: 18, position: 'relative', width: 67 },
-  folderTab: { borderRadius: 7, height: 20, left: 2, position: 'absolute', top: 1, width: 34 },
-  folderFace: { borderCurve: 'continuous', borderRadius: 8, bottom: 0, height: 48, left: 0, position: 'absolute', width: 67 },
-  folderSymbol: { alignItems: 'center', bottom: 4, height: 42, justifyContent: 'center', left: 0, position: 'absolute', width: 67 },
-  serviceName: { fontFamily: fontFamilies.semibold, fontSize: 13.5, lineHeight: 18, minHeight: 36, textAlign: 'center', width: '100%' },
+  card: { alignItems: 'center', aspectRatio: 1, borderCurve: 'continuous', borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, justifyContent: 'flex-end', paddingBottom: 10, paddingHorizontal: 6, paddingTop: 17, position: 'relative' },
+  cornerIcon: { position: 'absolute', right: 8, top: 8 },
+  folderIcon: { height: 45, marginBottom: 8, position: 'relative', width: 54 },
+  folderTab: { borderRadius: 6, height: 16, left: 2, position: 'absolute', top: 1, width: 27 },
+  folderFace: { borderCurve: 'continuous', borderRadius: 7, bottom: 0, height: 38, left: 0, position: 'absolute', width: 54 },
+  folderSymbol: { alignItems: 'center', bottom: 3, height: 34, justifyContent: 'center', left: 0, position: 'absolute', width: 54 },
+  serviceName: { fontFamily: fontFamilies.semibold, fontSize: 12.5, lineHeight: 16, minHeight: 32, textAlign: 'center', width: '100%' },
   stateContainer: { alignItems: 'center', gap: 9, justifyContent: 'center', minHeight: 220, paddingHorizontal: 24 },
   errorState: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 20, borderWidth: 1, gap: 9, minHeight: 250, padding: 24 },
   stateIcon: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 14, height: 48, justifyContent: 'center', width: 48 },

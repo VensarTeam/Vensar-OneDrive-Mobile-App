@@ -178,13 +178,15 @@ export function ProfileScreen() {
               </View>
               <View style={styles.appearanceContent}>
                 <Text style={[styles.detailLabel, { color: colors.text }]}>Dark mode</Text>
-                <Switch
-                  accessibilityLabel="Dark mode"
-                  onValueChange={vm.setDarkMode}
-                  thumbColor={colors.onPrimary}
-                  trackColor={{ false: colors.border, true: colors.primary }}
-                  value={vm.isDarkMode}
-                />
+                <View style={styles.switchContainer}>
+                  <Switch
+                    accessibilityLabel="Dark mode"
+                    onValueChange={vm.setDarkMode}
+                    thumbColor={colors.onPrimary}
+                    trackColor={{ false: colors.border, true: colors.primary }}
+                    value={vm.isDarkMode}
+                  />
+                </View>
               </View>
             </View>
           </View>
@@ -259,7 +261,8 @@ const styles = StyleSheet.create({
   detailLabel: { flex: 1, fontFamily: fontFamilies.semibold, fontSize: 14 },
   detailValue: { flexShrink: 1, fontFamily: fontFamilies.regular, fontSize: 13, textAlign: 'right' },
   appearanceRow: { alignItems: 'center', flexDirection: 'row', minHeight: 65, paddingLeft: 14 },
-  appearanceContent: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 12, minHeight: 65, paddingHorizontal: 15 },
+  appearanceContent: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 12, justifyContent: 'space-between', minHeight: 65, paddingHorizontal: 15 },
+  switchContainer: { alignItems: 'center', alignSelf: 'stretch', justifyContent: 'center', minWidth: 52 },
   signOutButton: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 17, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 10, justifyContent: 'center', marginTop: 27, minHeight: 54, paddingHorizontal: 18 },
   signOutText: { fontFamily: fontFamilies.semibold, fontSize: 15 },
   footer: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 7, justifyContent: 'center', paddingTop: 18 },

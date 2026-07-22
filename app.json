@@ -12,7 +12,7 @@
         "dark": "./assets/appstore-icon-dark.png"
       },
       "supportsTablet": true,
-      "bundleIdentifier": "com.rmehra831.oneDriveVensarApp"
+      "bundleIdentifier": "com.vensar.vdrive"
     },
     "android": {
       "icon": "./assets/playstore-icon.png",
@@ -23,7 +23,7 @@
       "versionCode": 1,
       "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false,
-      "package": "com.rmehra831.oneDriveVensarApp"
+      "package": "com.vensar.vdrive"
     },
     "web": {
       "favicon": "./assets/favicon.png"

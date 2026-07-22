@@ -106,6 +106,13 @@ export function useDriveBrowserViewModel({
     await loadFolder(selectedProject, nextBreadcrumbs.at(-1)?.id);
   }, [breadcrumbs, loadFolder, selectedProject]);
 
+  const goToProjects = useCallback(() => {
+    setSelectedProject(undefined);
+    setListing(undefined);
+    setBreadcrumbs([]);
+    setError(undefined);
+  }, []);
+
   const refresh = useCallback(async () => {
     if (!selectedProject) return loadProjects();
     await loadFolder(selectedProject, breadcrumbs.at(-1)?.id);
@@ -115,6 +122,7 @@ export function useDriveBrowserViewModel({
     breadcrumbs,
     error,
     goBack,
+    goToProjects,
     isLoading,
     listing,
     openFolder,

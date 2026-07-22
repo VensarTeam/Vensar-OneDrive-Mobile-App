@@ -6,6 +6,9 @@ import { useAuthSession } from '../services/auth-session-provider';
 import { isValidOtp } from '../services/authValidationService';
 
 const otpLifetimeSeconds = 5 * 60;
+const successPoseDurationMs = 2000;
+
+const wait = (duration: number) => new Promise((resolve) => setTimeout(resolve, duration));
 
 export function useOtpViewModel(identifier: string, onSuccess: () => void) {
   const { showToast } = useToast();
@@ -15,6 +18,7 @@ export function useOtpViewModel(identifier: string, onSuccess: () => void) {
   const [error, setError] = useState<string>();
   const [isSubmitting, setSubmitting] = useState(false);
   const [isAutoVerifying, setAutoVerifying] = useState(false);
+  const [isVerified, setVerified] = useState(false);
   const automaticAttemptedOtp = useRef<string | undefined>(undefined);
 
   useEffect(() => {
@@ -45,12 +49,15 @@ export function useOtpViewModel(identifier: string, onSuccess: () => void) {
     try {
       const response = await verifyOtp(identifier, otp);
       await completeSignIn(response);
+      setVerified(true);
+      await wait(successPoseDurationMs);
       showToast({ message: 'Your account has been verified securely.', title: 'Welcome back' });
       onSuccess();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Verification failed. Check the code and try again.';
       setError(message);
+      setVerified(false);
       showToast({ message, tone: 'error' });
     } finally {
       setAutoVerifying(false);
@@ -74,12 +81,15 @@ export function useOtpViewModel(identifier: string, onSuccess: () => void) {
     try {
       const response = await verifyOtp(identifier, otp);
       await completeSignIn(response);
+      setVerified(true);
+      await wait(successPoseDurationMs);
       showToast({ message: 'Your account has been verified securely.', title: 'Welcome back' });
       onSuccess();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Verification failed. Check the code and try again.';
       setError(message);
+      setVerified(false);
       showToast({ message, tone: 'error' });
     } finally {
       setSubmitting(false);
@@ -93,10 +103,12 @@ export function useOtpViewModel(identifier: string, onSuccess: () => void) {
     isExpired,
     isSubmitting,
     isAutoVerifying,
+    isVerified,
     otp,
     setOtp: (value: string) => {
       const nextOtp = value.replace(/\D/g, '').slice(0, 6);
       if (nextOtp !== otp) automaticAttemptedOtp.current = undefined;
+      setVerified(false);
       setOtp(nextOtp);
       setError(undefined);
     },

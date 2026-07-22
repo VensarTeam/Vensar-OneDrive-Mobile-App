@@ -1,4 +1,4 @@
-package com.rmehra831.oneDriveVensarApp
+package com.vensar.vdrive
 
 import android.app.Application
 import android.content.res.Configuration

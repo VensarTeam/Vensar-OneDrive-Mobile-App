@@ -1,8 +1,10 @@
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import Animated, { Easing, FadeIn, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useResponsiveLayout } from '../../../core/responsive';
@@ -41,7 +43,8 @@ const serviceIcons: Record<string, string> = {
   tunnels: 'tunnel-outline',
 };
 
-const accents = ['#062F7D', '#4F46E5'];
+const serviceAccentColor = '#062F7D';
+type ServicesViewMode = 'grid' | 'list';
 
 function getInitials(name: string) {
   return name
@@ -52,11 +55,6 @@ function getInitials(name: string) {
     .join('') || 'U';
 }
 
-function serviceAccent(serviceId: string) {
-  const value = [...serviceId].reduce((total, character) => total + character.charCodeAt(0), 0);
-  return accents[value % accents.length];
-}
-
 export function HomeScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<HomeTabParamList, 'Dashboard'>>();
   const insets = useSafeAreaInsets();
@@ -65,8 +63,43 @@ export function HomeScreen() {
   const { colors } = theme;
   const vm = useHomeViewModel();
   const { user } = useAuthSession();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [servicesViewMode, setServicesViewMode] = useState<ServicesViewMode>('grid');
+  const searchInputRef = useRef<TextInput>(null);
+  const searchWidth = useSharedValue(42);
   const columns = layout.isCompact ? 3 : 4;
   const displayName = user?.name || 'User';
+  const expandedSearchWidth = Math.min(
+    layout.width - (layout.horizontalPadding * 2) - 104,
+    layout.isCompact ? 236 : 340,
+  );
+  const animatedSearchStyle = useAnimatedStyle(() => ({
+    width: searchWidth.value,
+  }));
+
+  useEffect(() => {
+    if (isSearchOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [isSearchOpen]);
+
+  function openSearch() {
+    setIsSearchOpen(true);
+    searchWidth.value = withTiming(expandedSearchWidth, {
+      duration: 240,
+      easing: Easing.out(Easing.cubic),
+    });
+  }
+
+  function closeSearch() {
+    Keyboard.dismiss();
+    vm.clearSearch();
+    searchWidth.value = withTiming(42, {
+      duration: 220,
+      easing: Easing.inOut(Easing.cubic),
+    });
+    setTimeout(() => setIsSearchOpen(false), 220);
+  }
 
   return (
     <View
@@ -78,7 +111,7 @@ export function HomeScreen() {
             styles.fixedContent,
             {
               paddingHorizontal: layout.horizontalPadding,
-              paddingTop: insets.top + 14,
+              paddingTop: insets.top + 8,
             },
           ]}
         >
@@ -95,7 +128,13 @@ export function HomeScreen() {
               style={styles.brandLogo}
             />
           </View>
-          <View style={styles.userGreeting}>
+          <Pressable
+            accessibilityHint="Opens your profile"
+            accessibilityLabel={`${displayName} profile`}
+            accessibilityRole="button"
+            onPress={() => navigation.navigate('Profile')}
+            style={({ pressed }) => [styles.userGreeting, { opacity: pressed ? 0.72 : 1 }]}
+          >
             <View style={styles.greetingCopy}>
               <Text style={[styles.welcomeLabel, { color: colors.textMuted }]}>Welcome,</Text>
               <Text numberOfLines={1} selectable style={[styles.welcomeName, { color: colors.text }]}>
@@ -114,7 +153,7 @@ export function HomeScreen() {
                 <Text style={[styles.avatarText, { color: colors.primary }]}>{getInitials(displayName)}</Text>
               )}
             </View>
-          </View>
+          </Pressable>
         </View>
 
         <View style={styles.hero}>
@@ -125,41 +164,89 @@ export function HomeScreen() {
           </Text>
         </View>
 
-        <View
-          style={[
-            styles.search,
-            { backgroundColor: colors.surface, borderColor: vm.searchQuery ? colors.primary : colors.border },
-          ]}
-        >
-          <Icon color={vm.searchQuery ? colors.primary : colors.textMuted} size={21} source="magnify" />
-          <TextInput
-            accessibilityLabel="Search services"
-            autoCapitalize="none"
-            autoCorrect={false}
-            onChangeText={vm.setSearchQuery}
-            placeholder="Search services"
-            placeholderTextColor={colors.textMuted}
-            returnKeyType="search"
-            selectionColor={colors.primary}
-            style={[styles.searchInput, { color: colors.text }]}
-            value={vm.searchQuery}
-          />
-          {vm.searchQuery ? (
-            <Pressable accessibilityLabel="Clear search" hitSlop={10} onPress={vm.clearSearch}>
-              <Icon color={colors.textMuted} size={20} source="close-circle" />
-            </Pressable>
-          ) : null}
-        </View>
-
         <View style={styles.sectionHeader}>
           <Text selectable style={[styles.sectionTitle, { color: colors.text }]}>Services</Text>
-          {!vm.isLoading && !vm.error ? (
-            <Text selectable style={[styles.count, { color: colors.textMuted }]}>
-              {vm.filteredServices.length === vm.serviceCount
-                ? `${vm.serviceCount} available`
-                : `${vm.filteredServices.length} of ${vm.serviceCount}`}
-            </Text>
-          ) : null}
+          <View style={styles.toolbarActions}>
+            {!isSearchOpen ? (
+              <View
+                accessibilityLabel="Services view"
+                accessibilityRole="tablist"
+                style={[styles.viewToggle, { backgroundColor: colors.surfaceMuted, borderColor: colors.border }]}
+              >
+                {(['grid', 'list'] as const).map((mode) => {
+                  const isSelected = servicesViewMode === mode;
+
+                  return (
+                    <Pressable
+                      accessibilityLabel={`${mode === 'grid' ? 'Grid' : 'List'} view`}
+                      accessibilityRole="tab"
+                      accessibilityState={{ selected: isSelected }}
+                      key={mode}
+                      onPress={() => setServicesViewMode(mode)}
+                      style={({ pressed }) => [
+                        styles.viewToggleButton,
+                        {
+                          backgroundColor: isSelected ? colors.primary : 'transparent',
+                          opacity: pressed ? 0.76 : 1,
+                        },
+                      ]}
+                    >
+                      <Icon
+                        color={isSelected ? colors.onPrimary : colors.textMuted}
+                        size={19}
+                        source={mode === 'grid' ? 'view-grid-outline' : 'view-list-outline'}
+                      />
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+            <Animated.View
+              style={[
+                styles.search,
+                animatedSearchStyle,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: isSearchOpen ? colors.primary : colors.border,
+                  boxShadow: colorScheme === 'dark'
+                    ? '0 5px 14px rgba(0, 0, 0, 0.25)'
+                    : '0 5px 14px rgba(27, 48, 78, 0.10)',
+                },
+              ]}
+            >
+              {isSearchOpen ? (
+                <>
+                  <Icon color={colors.primary} size={20} source="magnify" />
+                  <TextInput
+                    ref={searchInputRef}
+                    accessibilityLabel="Search services"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    onChangeText={vm.setSearchQuery}
+                    placeholder="Search services"
+                    placeholderTextColor={colors.textMuted}
+                    returnKeyType="search"
+                    selectionColor={colors.primary}
+                    style={[styles.searchInput, { color: colors.text }]}
+                    value={vm.searchQuery}
+                  />
+                  <Pressable accessibilityLabel="Close search" hitSlop={8} onPress={closeSearch}>
+                    <Icon color={colors.textMuted} size={21} source="close" />
+                  </Pressable>
+                </>
+              ) : (
+                <Pressable
+                  accessibilityLabel="Open service search"
+                  accessibilityRole="button"
+                  hitSlop={8}
+                  onPress={openSearch}
+                  style={styles.searchButton}
+                >
+                  <Icon color={colors.primary} size={22} source="magnify" />
+                </Pressable>
+              )}
+            </Animated.View>
+          </View>
         </View>
         </View>
 
@@ -203,11 +290,28 @@ export function HomeScreen() {
               <Text selectable style={[styles.stateTitle, { color: colors.text }]}>No matching services</Text>
               <Text selectable style={[styles.stateMessage, { color: colors.textMuted }]}>Try a different service name or keyword.</Text>
             </View>
+          ) : servicesViewMode === 'grid' ? (
+            <Animated.View entering={FadeIn.duration(180)} style={styles.grid}>
+              {vm.filteredServices.map((service) => {
+                const openService = () => navigation.navigate('Files', {
+                  serviceId: service.serviceId,
+                  serviceName: service.serviceName,
+                });
+
+                return (
+                  <ServiceCard
+                    columns={columns}
+                    key={service.id}
+                    onPress={openService}
+                    service={service}
+                  />
+                );
+              })}
+            </Animated.View>
           ) : (
-            <View style={styles.grid}>
+            <Animated.View entering={FadeIn.duration(180)} style={styles.list}>
               {vm.filteredServices.map((service) => (
-                <ServiceCard
-                  columns={columns}
+                <ServiceListItem
                   key={service.id}
                   onPress={() => navigation.navigate('Files', {
                     serviceId: service.serviceId,
@@ -216,7 +320,7 @@ export function HomeScreen() {
                   service={service}
                 />
               ))}
-            </View>
+            </Animated.View>
           )}
         </ScrollView>
       </View>
@@ -224,9 +328,47 @@ export function HomeScreen() {
   );
 }
 
+function ServiceListItem({ onPress, service }: { onPress: () => void; service: Service }) {
+  const { colorScheme, theme } = useAppTheme();
+  const accent = serviceAccentColor;
+  const icon = serviceIcons[service.serviceIcon] ?? 'shape-outline';
+
+  return (
+    <Pressable
+      accessibilityHint="Opens projects and files for this service"
+      accessibilityLabel={service.serviceName}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.listCard,
+        {
+          backgroundColor: pressed ? theme.colors.surfaceMuted : theme.colors.surface,
+          borderColor: pressed ? theme.colors.primary : theme.colors.border,
+          boxShadow: colorScheme === 'dark'
+            ? '0 5px 16px rgba(0, 0, 0, 0.20)'
+            : '0 5px 16px rgba(27, 48, 78, 0.06)',
+          transform: [{ scale: pressed ? 0.985 : 1 }],
+        },
+      ]}
+    >
+      <View style={[styles.listIcon, { backgroundColor: `${accent}12` }]}>
+        <Icon color={accent} size={25} source={icon} />
+      </View>
+      <View style={styles.listCopy}>
+        <Text numberOfLines={1} selectable style={[styles.listServiceName, { color: theme.colors.text }]}>
+          {service.serviceName}
+        </Text>
+      </View>
+      <View style={[styles.listArrow, { backgroundColor: theme.colors.surfaceMuted }]}>
+        <Icon color={theme.colors.primary} size={19} source="chevron-right" />
+      </View>
+    </Pressable>
+  );
+}
+
 function ServiceCard({ columns, onPress, service }: { columns: number; onPress: () => void; service: Service }) {
   const { colorScheme, theme } = useAppTheme();
-  const accent = serviceAccent(service.serviceId);
+  const accent = serviceAccentColor;
   const icon = serviceIcons[service.serviceIcon] ?? 'shape-outline';
 
   return (
@@ -283,16 +425,25 @@ const styles = StyleSheet.create({
   avatar: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, height: 40, justifyContent: 'center', overflow: 'hidden', width: 40 },
   avatarText: { fontFamily: fontFamilies.semibold, fontSize: 13 },
   avatarImage: { height: '100%', width: '100%' },
-  hero: { gap: 5, paddingTop: 27 },
+  hero: { gap: 4, paddingTop: 18 },
   eyebrow: { fontFamily: fontFamilies.bold, fontSize: 14, letterSpacing: 1.3, lineHeight: 16 },
   heroTitle: { fontFamily: fontFamilies.bold, fontSize: 25, letterSpacing: -0.5, lineHeight: 32 },
   heroCopy: { fontFamily: fontFamilies.regular, fontSize: 14, lineHeight: 20 },
-  search: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 10, marginTop: 22, minHeight: 54, paddingHorizontal: 15 },
-  searchInput: { flex: 1, fontFamily: fontFamilies.regular, fontSize: 15, height: 52, paddingVertical: 0 },
-  sectionHeader: { alignItems: 'baseline', flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 14, paddingTop: 27 },
+  toolbarActions: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 8, justifyContent: 'flex-end' },
+  viewToggle: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 21, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 2, height: 42, padding: 3 },
+  viewToggleButton: { alignItems: 'center', borderRadius: 17, height: 34, justifyContent: 'center', width: 36 },
+  search: { alignItems: 'center', borderRadius: 21, borderWidth: 1, flexDirection: 'row', gap: 9, height: 42, overflow: 'hidden', paddingHorizontal: 10 },
+  searchButton: { alignItems: 'center', height: 40, justifyContent: 'center', marginHorizontal: -10, width: 40 },
+  searchInput: { flex: 1, fontFamily: fontFamilies.regular, fontSize: 15, height: 40, minWidth: 0, paddingVertical: 0 },
+  sectionHeader: { alignItems: 'center', flexDirection: 'row', gap: 12, justifyContent: 'space-between', paddingBottom: 10, paddingTop: 18 },
   sectionTitle: { fontFamily: fontFamilies.bold, fontSize: 21, lineHeight: 27 },
-  count: { fontFamily: fontFamilies.regular, fontSize: 12, fontVariant: ['tabular-nums'] },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 12 },
+  list: { gap: 10 },
+  listCard: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 10, minHeight: 58, paddingHorizontal: 10, paddingVertical: 7 },
+  listIcon: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 11, height: 42, justifyContent: 'center', width: 42 },
+  listCopy: { flex: 1, minWidth: 0 },
+  listServiceName: { fontFamily: fontFamilies.semibold, fontSize: 14.5, lineHeight: 20 },
+  listArrow: { alignItems: 'center', borderRadius: 14, height: 28, justifyContent: 'center', width: 28 },
   card: { alignItems: 'center', aspectRatio: 1, borderCurve: 'continuous', borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, justifyContent: 'flex-end', paddingBottom: 10, paddingHorizontal: 6, paddingTop: 17, position: 'relative' },
   cornerIcon: { position: 'absolute', right: 8, top: 8 },
   folderIcon: { height: 45, marginBottom: 8, position: 'relative', width: 54 },

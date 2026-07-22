@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.rmehra831.oneDriveVensarApp'
+    namespace 'com.vensar.vdrive'
     defaultConfig {
-        applicationId 'com.rmehra831.oneDriveVensarApp'
+        applicationId 'com.vensar.vdrive'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

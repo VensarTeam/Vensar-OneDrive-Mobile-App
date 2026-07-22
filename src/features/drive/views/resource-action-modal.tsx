@@ -35,6 +35,7 @@ import { downloadAndOpenFile, prepareFileForPreview } from '../services/file-dow
 export type SelectedResource = { item: DriveFile | DriveFolder; type: DriveResourceType };
 export type PreparedFile = { fileName: string; mimeType: string; uri: string };
 type Mode = 'actions' | 'copy' | 'move' | 'share';
+type QuickAction = 'copy-link' | 'download' | 'external-share' | 'view';
 
 export function ResourceActionModal(props: {
   accessMode: 'owner' | SharePermission;
@@ -67,6 +68,7 @@ export function ResourceActionModal(props: {
   const [linkSettingsExpanded, setLinkSettingsExpanded] = useState(true);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isBusy, setBusy] = useState(false);
+  const [activeQuickAction, setActiveQuickAction] = useState<QuickAction>();
   const [isActionSheetVisible, setActionSheetVisible] = useState(true);
   const [previewFile, setPreviewFile] = useState<PreparedFile>();
 
@@ -79,6 +81,7 @@ export function ResourceActionModal(props: {
     setUserQuery('');
     setUsers([]);
     setShare(undefined);
+    setActiveQuickAction(undefined);
     setActionSheetVisible(true);
     setPreviewFile(undefined);
   }, [initialMode, resource]);
@@ -175,23 +178,25 @@ export function ResourceActionModal(props: {
   };
 
   const copyLink = async () => {
-    setBusy(true);
+    setActiveQuickAction('copy-link');
     try {
       await Clipboard.setStringAsync(await ensureLink());
+      onClose();
       showToast({ message: 'Anyone with the link can view this item.', title: 'Link copied' });
     } catch (error) { reportError(error, 'Unable to create a share link.'); }
-    finally { setBusy(false); }
+    finally { setActiveQuickAction(undefined); }
   };
 
   const download = async () => {
     if (resource.type !== 'file') return;
     const file = resource.item as DriveFile;
-    setBusy(true);
+    setActiveQuickAction('download');
     try {
       const saved = await downloadAndOpenFile(file.id, file.name, file.mimeType);
+      onClose();
       showToast({ message: `${saved.fileName} saved to ${saved.directoryName}.`, title: 'Download complete' });
     } catch (error) { reportError(error, 'Unable to download file.'); }
-    finally { setBusy(false); }
+    finally { setActiveQuickAction(undefined); }
   };
 
   const prepareCurrentFile = async () => {
@@ -201,7 +206,7 @@ export function ResourceActionModal(props: {
   };
 
   const viewFile = async () => {
-    setBusy(true);
+    setActiveQuickAction('view');
     try {
       const prepared = await prepareCurrentFile();
       if (prepared) {
@@ -210,17 +215,21 @@ export function ResourceActionModal(props: {
         setPreviewFile(prepared);
       }
     } catch (error) { reportError(error, 'Unable to open file preview.'); }
-    finally { setBusy(false); }
+    finally { setActiveQuickAction(undefined); }
   };
 
   const shareWithApps = async () => {
-    setBusy(true);
+    setActiveQuickAction('external-share');
     try {
       if (!await Sharing.isAvailableAsync()) throw new Error('Sharing is not available on this device.');
       const prepared = await prepareCurrentFile();
-      if (prepared) await Sharing.shareAsync(prepared.uri, { dialogTitle: `Share ${prepared.fileName}`, mimeType: prepared.mimeType });
+      if (prepared) {
+        await Sharing.shareAsync(prepared.uri, { dialogTitle: `Share ${prepared.fileName}`, mimeType: prepared.mimeType });
+        onClose();
+        showToast({ message: `${prepared.fileName} was sent to the selected app.`, title: 'Share completed' });
+      }
     } catch (error) { reportError(error, 'Unable to share this file.'); }
-    finally { setBusy(false); }
+    finally { setActiveQuickAction(undefined); }
   };
 
   const toggleUser = (user: ShareUser) => {
@@ -244,6 +253,7 @@ export function ResourceActionModal(props: {
       setUserQuery('');
       setUsers([]);
       if (collapseSettings) setLinkSettingsExpanded(false);
+      onClose();
       showToast({ message: selectedUsers.length ? `Access granted to ${selectedUsers.length} ${selectedUsers.length === 1 ? 'person' : 'people'}.` : 'Link settings saved.', title: 'Access updated' });
     } catch (error) { reportError(error, 'Unable to share item.'); }
     finally { setBusy(false); }
@@ -267,13 +277,13 @@ export function ResourceActionModal(props: {
       {mode === 'actions' ? (
         <ScrollView contentContainerStyle={styles.actions}>
           {isReadOnly ? <View style={[styles.permissionNotice, { backgroundColor: `${colors.primary}0D`, borderColor: `${colors.primary}2B` }]}><View style={[styles.permissionNoticeIcon, { backgroundColor: `${colors.primary}16` }]}><Icon color={colors.primary} size={23} source="shield-lock-outline" /></View><View style={styles.permissionNoticeCopy}><Text style={[styles.permissionNoticeTitle, { color: colors.text }]}>View-only shared access</Text><Text selectable style={[styles.permissionNoticeText, { color: colors.textMuted }]}>You can browse this shared content{resource.type === 'file' ? ' and download this file' : ''}. Copy, Move, Share, and permission changes require edit access.</Text></View></View> : null}
-          {!isReadOnly ? <ActionRow icon="share-variant-outline" label="Share and manage access" onPress={openShare} /> : null}
-          {!isReadOnly ? <ActionRow icon="link-variant" label="Copy link" loading={isBusy} onPress={copyLink} /> : null}
-          {!isReadOnly ? <ActionRow icon="content-copy" label="Copy to another folder" onPress={openCopy} /> : null}
-          {!isReadOnly ? <ActionRow icon="folder-move-outline" label="Move to another folder" onPress={openMove} /> : null}
-          {resource.type === 'file' ? <ActionRow icon="eye-outline" label="View in app" loading={isBusy} onPress={viewFile} /> : null}
-          {resource.type === 'file' ? <ActionRow icon="export-variant" label="Share to another app" loading={isBusy} onPress={shareWithApps} /> : null}
-          {resource.type === 'file' ? <ActionRow icon="download-outline" label="Download" loading={isBusy} onPress={download} /> : null}
+          {!isReadOnly ? <ActionRow disabled={Boolean(activeQuickAction)} icon="share-variant-outline" label="Share and manage access" onPress={openShare} /> : null}
+          {!isReadOnly ? <ActionRow disabled={Boolean(activeQuickAction)} icon="link-variant" label="Copy link" loading={activeQuickAction === 'copy-link'} onPress={copyLink} /> : null}
+          {!isReadOnly ? <ActionRow disabled={Boolean(activeQuickAction)} icon="content-copy" label="Copy to another folder" onPress={openCopy} /> : null}
+          {!isReadOnly ? <ActionRow disabled={Boolean(activeQuickAction)} icon="folder-move-outline" label="Move to another folder" onPress={openMove} /> : null}
+          {resource.type === 'file' ? <ActionRow disabled={Boolean(activeQuickAction)} icon="eye-outline" label="View in app" loading={activeQuickAction === 'view'} onPress={viewFile} /> : null}
+          {resource.type === 'file' ? <ActionRow disabled={Boolean(activeQuickAction)} icon="export-variant" label="Share to external app" loading={activeQuickAction === 'external-share'} onPress={shareWithApps} /> : null}
+          {resource.type === 'file' ? <ActionRow disabled={Boolean(activeQuickAction)} icon="download-outline" label="Download" loading={activeQuickAction === 'download'} onPress={download} /> : null}
         </ScrollView>
       ) : mode === 'copy' || mode === 'move' ? (
         <View style={styles.flexBody}>
@@ -355,7 +365,7 @@ export function FilePreviewModal({ file, onClose }: { file: PreparedFile; onClos
     if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(file.uri, { dialogTitle: `Share ${file.fileName}`, mimeType: file.mimeType });
   };
 
-  return <Modal animationType="fade" onRequestClose={onClose} presentationStyle="fullScreen" visible><View style={[styles.previewScreen, { backgroundColor: colors.background, paddingBottom: insets.bottom, paddingTop: insets.top }]}><View style={[styles.previewHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}><Pressable accessibilityLabel="Close preview" hitSlop={10} onPress={onClose} style={styles.previewHeaderButton}><Icon color={colors.text} size={24} source="close" /></Pressable><View style={styles.previewTitleArea}><Icon color={colors.primary} size={20} source={typeIcon} /><Text numberOfLines={1} style={[styles.previewTitle, { color: colors.text }]}>{file.fileName}</Text></View><Pressable accessibilityLabel="Share to another app" hitSlop={10} onPress={share} style={styles.previewHeaderButton}><Icon color={colors.primary} size={23} source="export-variant" /></Pressable></View>{isImage ? <Image accessibilityLabel={file.fileName} contentFit="contain" source={file.uri} style={styles.previewImage} /> : isText ? <ScrollView contentContainerStyle={styles.textPreviewContent} style={styles.textPreview}><Text selectable style={[styles.previewText, { color: colors.text }]}>{textContent ?? 'Loading preview…'}</Text></ScrollView> : <View style={styles.unsupportedPreview}><View style={[styles.previewFileIcon, { backgroundColor: colors.surfaceMuted }]}><Icon color={colors.primary} size={42} source={typeIcon} /></View><Text style={[styles.unsupportedTitle, { color: colors.text }]}>Preview not available for this format</Text><Text style={[styles.unsupportedText, { color: colors.textMuted }]}>Use the share button to open this file in a compatible app installed on your device.</Text><Pressable onPress={share} style={[styles.openExternallyButton, { backgroundColor: colors.primary }]}><Icon color={colors.onPrimary} size={19} source="open-in-new" /><Text style={[styles.openExternallyLabel, { color: colors.onPrimary }]}>Open in another app</Text></Pressable></View>}</View></Modal>;
+  return <Modal animationType="fade" onRequestClose={onClose} presentationStyle="fullScreen" visible><View style={[styles.previewScreen, { backgroundColor: colors.background, paddingBottom: insets.bottom, paddingTop: insets.top }]}><View style={[styles.previewHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}><Pressable accessibilityLabel="Close preview" hitSlop={10} onPress={onClose} style={styles.previewHeaderButton}><Icon color={colors.text} size={24} source="close" /></Pressable><View style={styles.previewTitleArea}><Icon color={colors.primary} size={20} source={typeIcon} /><Text numberOfLines={1} style={[styles.previewTitle, { color: colors.text }]}>{file.fileName}</Text></View><Pressable accessibilityLabel="Share to external app" hitSlop={10} onPress={share} style={styles.previewHeaderButton}><Icon color={colors.primary} size={23} source="export-variant" /></Pressable></View>{isImage ? <Image accessibilityLabel={file.fileName} contentFit="contain" source={file.uri} style={styles.previewImage} /> : isText ? <ScrollView contentContainerStyle={styles.textPreviewContent} style={styles.textPreview}><Text selectable style={[styles.previewText, { color: colors.text }]}>{textContent ?? 'Loading preview…'}</Text></ScrollView> : <View style={styles.unsupportedPreview}><View style={[styles.previewFileIcon, { backgroundColor: colors.surfaceMuted }]}><Icon color={colors.primary} size={42} source={typeIcon} /></View><Text style={[styles.unsupportedTitle, { color: colors.text }]}>Preview not available for this format</Text><Text style={[styles.unsupportedText, { color: colors.textMuted }]}>Use the share button to open this file in a compatible app installed on your device.</Text><Pressable onPress={share} style={[styles.openExternallyButton, { backgroundColor: colors.primary }]}><Icon color={colors.onPrimary} size={19} source="open-in-new" /><Text style={[styles.openExternallyLabel, { color: colors.onPrimary }]}>Open in another app</Text></Pressable></View>}</View></Modal>;
 }
 
 function getPreviewFileIcon(mimeType: string, extension?: string) {
@@ -433,7 +443,7 @@ function dedupeUsers(users: ShareUser[]) {
 }
 
 function SearchField({ onChangeText, placeholder, value }: { onChangeText: (value: string) => void; placeholder: string; value: string }) { const { theme } = useAppTheme(); return <View style={[styles.search, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}><Icon color={theme.colors.textMuted} size={20} source="magnify" /><TextInput autoCapitalize="none" autoCorrect={false} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor={theme.colors.textMuted} style={[styles.input, { color: theme.colors.text }]} value={value} />{value ? <Pressable onPress={() => onChangeText('')}><Icon color={theme.colors.textMuted} size={19} source="close-circle" /></Pressable> : null}</View>; }
-function ActionRow({ icon, label, loading, onPress }: { icon: string; label: string; loading?: boolean; onPress: () => void }) { const { theme } = useAppTheme(); return <Pressable disabled={loading} onPress={onPress} style={({ pressed }) => [styles.actionRow, { backgroundColor: pressed ? theme.colors.surfaceMuted : theme.colors.surface, borderColor: theme.colors.border }]}><View style={[styles.icon, { backgroundColor: theme.colors.surfaceMuted }]}>{loading ? <ActivityIndicator color={theme.colors.primary} size="small" /> : <Icon color={theme.colors.primary} size={23} source={icon} />}</View><Text style={[styles.rowLabel, { color: theme.colors.text }]}>{label}</Text><Icon color={theme.colors.textMuted} size={20} source="chevron-right" /></Pressable>; }
+function ActionRow({ disabled, icon, label, loading, onPress }: { disabled?: boolean; icon: string; label: string; loading?: boolean; onPress: () => void }) { const { theme } = useAppTheme(); return <Pressable accessibilityState={{ busy: loading, disabled }} disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.actionRow, { backgroundColor: pressed ? theme.colors.surfaceMuted : theme.colors.surface, borderColor: theme.colors.border, opacity: disabled && !loading ? 0.58 : 1 }]}><View style={[styles.icon, { backgroundColor: theme.colors.surfaceMuted }]}>{loading ? <ActivityIndicator color={theme.colors.primary} size="small" /> : <Icon color={theme.colors.primary} size={23} source={icon} />}</View><Text style={[styles.rowLabel, { color: theme.colors.text }]}>{label}</Text><Icon color={theme.colors.textMuted} size={20} source="chevron-right" /></Pressable>; }
 function Avatar({ name }: { name: string }) { const { theme } = useAppTheme(); return <View style={[styles.avatar, { backgroundColor: theme.colors.surfaceMuted }]}><Text style={[styles.avatarText, { color: theme.colors.primary }]}>{name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('')}</Text></View>; }
 function UserRow({ onPress, user }: { onPress: () => void; user: ShareUser }) { const { theme } = useAppTheme(); return <Pressable onPress={onPress} style={[styles.userRow, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}><Avatar name={user.name} /><View style={styles.rowCopy}><Text style={[styles.rowLabel, { color: theme.colors.text }]}>{user.name}</Text><Text style={[styles.rowMeta, { color: theme.colors.textMuted }]}>{user.email}</Text></View><View style={[styles.addCircle, { borderColor: theme.colors.primary }]}><Icon color={theme.colors.primary} size={19} source="plus" /></View></Pressable>; }
 

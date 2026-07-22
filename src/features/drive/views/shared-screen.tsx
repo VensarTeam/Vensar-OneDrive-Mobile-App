@@ -4,6 +4,7 @@ import * as Sharing from 'expo-sharing';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useResponsiveLayout } from '../../../core/responsive';
 import { useAppTheme } from '../../../core/theme';
@@ -44,6 +45,7 @@ function getSharedFileIcon(item: SharedDriveItem) {
 
 export function SharedScreen() {
   const navigation = useNavigation<BottomTabNavigationProp<HomeTabParamList, 'Shared'>>();
+  const insets = useSafeAreaInsets();
   const responsive = useResponsiveLayout();
   const { theme } = useAppTheme();
   const { colors } = theme;
@@ -120,7 +122,10 @@ export function SharedScreen() {
 
   return (
     <ScrollView
-      contentContainerStyle={[styles.scrollContent, { paddingHorizontal: responsive.horizontalPadding, paddingTop: responsive.isCompact ? 8 : 16 }]}
+      contentContainerStyle={[styles.scrollContent, {
+        paddingHorizontal: responsive.horizontalPadding,
+        paddingTop: (responsive.isCompact ? 8 : 16) + (process.env.EXPO_OS === 'android' ? insets.top : 0),
+      }]}
       contentInsetAdjustmentBehavior="automatic"
       style={[styles.screen, { backgroundColor: colors.background }]}
     >

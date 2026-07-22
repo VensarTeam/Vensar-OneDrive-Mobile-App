@@ -20,6 +20,7 @@ type AuthSessionContextValue = {
 };
 
 const AuthSessionContext = createContext<AuthSessionContextValue | null>(null);
+const BACKGROUND_LOCK_DELAY_MS = 5 * 60 * 1000;
 
 export function AuthSessionProvider({ children }: PropsWithChildren) {
   const [isAuthenticated, setAuthenticated] = useState(false);
@@ -30,6 +31,9 @@ export function AuthSessionProvider({ children }: PropsWithChildren) {
   const [biometricLabel, setBiometricLabel] = useState('biometrics');
   const [user, setUser] = useState<AuthUser | null>(null);
   const isAuthenticatingRef = useRef(false);
+  const backgroundedAtRef = useRef<number | null>(null);
+  const backgroundLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const appStateRef = useRef(AppState.currentState);
 
   useEffect(() => {
     void getStoredSession()
@@ -63,13 +67,42 @@ export function AuthSessionProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState !== 'active' && isAuthenticated && !isAuthenticatingRef.current) {
-        setLocked(true);
-        setLockError(null);
+      const wasActive = appStateRef.current === 'active';
+      appStateRef.current = nextState;
+
+      if (nextState !== 'active' && wasActive && isAuthenticated && !isAuthenticatingRef.current) {
+        backgroundedAtRef.current = Date.now();
+        if (backgroundLockTimerRef.current) clearTimeout(backgroundLockTimerRef.current);
+        backgroundLockTimerRef.current = setTimeout(() => {
+          setLocked(true);
+          setLockError(null);
+        }, BACKGROUND_LOCK_DELAY_MS);
+        return;
+      }
+
+      if (nextState === 'active') {
+        if (backgroundLockTimerRef.current) {
+          clearTimeout(backgroundLockTimerRef.current);
+          backgroundLockTimerRef.current = null;
+        }
+        const backgroundedAt = backgroundedAtRef.current;
+        backgroundedAtRef.current = null;
+        if (
+          backgroundedAt !== null
+          && Date.now() - backgroundedAt >= BACKGROUND_LOCK_DELAY_MS
+          && isAuthenticated
+          && !isAuthenticatingRef.current
+        ) {
+          setLocked(true);
+          setLockError(null);
+        }
       }
     });
 
-    return () => subscription.remove();
+    return () => {
+      subscription.remove();
+      if (backgroundLockTimerRef.current) clearTimeout(backgroundLockTimerRef.current);
+    };
   }, [isAuthenticated]);
 
   const completeSignIn = useCallback(async (response: VerifyOtpResponse) => {

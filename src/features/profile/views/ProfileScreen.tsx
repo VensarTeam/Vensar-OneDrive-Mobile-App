@@ -26,25 +26,31 @@ import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
 function DetailRow({ detail, isLast }: { detail: ProfileDetail; isLast: boolean }) {
   const { theme } = useAppTheme();
   const { colors } = theme;
+  const shouldStack = detail.label === 'Address' || detail.value.length > 34;
 
   return (
-    <View style={styles.detailRow}>
+    <View style={[styles.detailRow, shouldStack && styles.stackedDetailRow]}>
       <View style={[styles.detailIcon, { backgroundColor: colors.surfaceMuted }]}> 
         <Icon color={colors.primary} size={20} source={detail.icon} />
       </View>
       <View
         style={[
           styles.detailContent,
+          shouldStack && styles.stackedDetailContent,
           !isLast && styles.detailDivider,
           !isLast && { borderBottomColor: colors.border },
         ]}
       >
-        <Text style={[styles.detailLabel, { color: colors.text }]}>{detail.label}</Text>
+        <Text style={[styles.detailLabel, shouldStack && styles.stackedDetailLabel, { color: colors.text }]}>
+          {detail.label}
+        </Text>
         <Text
-          numberOfLines={1}
+          ellipsizeMode="tail"
+          numberOfLines={shouldStack ? 3 : 1}
           selectable
           style={[
             styles.detailValue,
+            shouldStack && styles.stackedDetailValue,
             { color: detail.valueTone === 'positive' ? colors.success : colors.textMuted },
           ]}
         >
@@ -86,7 +92,7 @@ export function ProfileScreen() {
         {
           paddingBottom: insets.bottom + 30,
           paddingHorizontal: responsive.horizontalPadding,
-          paddingTop: responsive.isCompact ? 8 : 16,
+          paddingTop: (responsive.isCompact ? 8 : 16) + (process.env.EXPO_OS === 'android' ? insets.top : 0),
         },
       ]}
       contentInsetAdjustmentBehavior="automatic"
@@ -131,11 +137,17 @@ export function ProfileScreen() {
             </View>
           </View>
           <View style={styles.identity}>
-            <Text selectable style={[styles.name, { color: colors.text }]}>{vm.profile.displayName}</Text>
-            <Text selectable style={[styles.email, { color: colors.textMuted }]}>{vm.profile.email}</Text>
+            <Text ellipsizeMode="tail" numberOfLines={2} selectable style={[styles.name, { color: colors.text }]}>
+              {vm.profile.displayName}
+            </Text>
+            <Text ellipsizeMode="middle" numberOfLines={1} selectable style={[styles.email, { color: colors.textMuted }]}>
+              {vm.profile.email}
+            </Text>
             <View style={[styles.accountBadge, { backgroundColor: colors.surfaceMuted }]}> 
               <Icon color={colors.primary} size={14} source="briefcase-outline" />
-              <Text style={[styles.accountBadgeText, { color: colors.primary }]}>{vm.profile.role}</Text>
+              <Text ellipsizeMode="tail" numberOfLines={1} style={[styles.accountBadgeText, { color: colors.primary }]}>
+                {vm.profile.role}
+              </Text>
             </View>
           </View>
         </View>
@@ -244,22 +256,26 @@ const styles = StyleSheet.create({
   avatar: { alignItems: 'center', borderRadius: 33, height: 66, justifyContent: 'center', overflow: 'hidden', width: 66 },
   avatarText: { fontFamily: fontFamilies.bold, fontSize: 21, letterSpacing: 0.4 },
   avatarImage: { height: '100%', width: '100%' },
-  identity: { alignItems: 'flex-start', flex: 1, gap: 4 },
-  name: { fontFamily: fontFamilies.bold, fontSize: 21, letterSpacing: -0.25 },
-  email: { fontFamily: fontFamilies.regular, fontSize: 14 },
-  accountBadge: { alignItems: 'center', borderRadius: 99, flexDirection: 'row', gap: 6, marginTop: 7, paddingHorizontal: 10, paddingVertical: 6 },
-  accountBadgeText: { fontFamily: fontFamilies.semibold, fontSize: 12 },
-  readOnlyBanner: { alignItems: 'center', flexDirection: 'row', gap: 8, justifyContent: 'center', paddingVertical: 17 },
-  readOnlyText: { fontFamily: fontFamilies.regular, fontSize: 12 },
+  identity: { alignItems: 'flex-start', flex: 1, gap: 4, minWidth: 0 },
+  name: { fontFamily: fontFamilies.bold, fontSize: 21, letterSpacing: -0.25, width: '100%' },
+  email: { fontFamily: fontFamilies.regular, fontSize: 14, width: '100%' },
+  accountBadge: { alignItems: 'center', alignSelf: 'flex-start', borderRadius: 99, flexDirection: 'row', gap: 6, marginTop: 7, maxWidth: '100%', paddingHorizontal: 10, paddingVertical: 6 },
+  accountBadgeText: { flexShrink: 1, fontFamily: fontFamilies.semibold, fontSize: 12, minWidth: 0 },
+  readOnlyBanner: { alignItems: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center', paddingVertical: 17 },
+  readOnlyText: { flexShrink: 1, fontFamily: fontFamilies.regular, fontSize: 12, textAlign: 'center' },
   section: { gap: 9, paddingTop: 15 },
   sectionTitle: { fontFamily: fontFamilies.semibold, fontSize: 12, letterSpacing: 0.7, paddingHorizontal: 4, textTransform: 'uppercase' },
   sectionCard: { borderCurve: 'continuous', borderRadius: 20, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
   detailRow: { alignItems: 'center', flexDirection: 'row', minHeight: 65, paddingLeft: 14 },
   detailIcon: { alignItems: 'center', borderRadius: 11, height: 38, justifyContent: 'center', width: 38 },
-  detailContent: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 12, justifyContent: 'space-between', minHeight: 65, paddingHorizontal: 15 },
+  detailContent: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 12, justifyContent: 'space-between', minHeight: 65, minWidth: 0, paddingHorizontal: 15 },
   detailDivider: { borderBottomWidth: StyleSheet.hairlineWidth },
-  detailLabel: { flex: 1, fontFamily: fontFamilies.semibold, fontSize: 14 },
-  detailValue: { flexShrink: 1, fontFamily: fontFamilies.regular, fontSize: 13, textAlign: 'right' },
+  detailLabel: { flex: 1, fontFamily: fontFamilies.semibold, fontSize: 14, minWidth: 0 },
+  detailValue: { flexShrink: 1, fontFamily: fontFamilies.regular, fontSize: 13, maxWidth: '62%', minWidth: 0, textAlign: 'right' },
+  stackedDetailRow: { minHeight: 82 },
+  stackedDetailContent: { alignItems: 'flex-start', flexDirection: 'column', gap: 3, justifyContent: 'center', paddingVertical: 11 },
+  stackedDetailLabel: { flex: 0 },
+  stackedDetailValue: { lineHeight: 18, maxWidth: '100%', textAlign: 'left', width: '100%' },
   appearanceRow: { alignItems: 'center', flexDirection: 'row', minHeight: 65, paddingLeft: 14 },
   appearanceContent: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 12, justifyContent: 'space-between', minHeight: 65, paddingHorizontal: 15 },
   switchContainer: { alignItems: 'center', alignSelf: 'stretch', justifyContent: 'center', minWidth: 52 },

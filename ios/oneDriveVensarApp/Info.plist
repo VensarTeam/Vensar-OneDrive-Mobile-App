@@ -27,7 +27,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.rmehra831.oneDriveVensarApp</string>
+				<string>com.vensar.vdrive</string>
 			</array>
 		</dict>
 	</array>

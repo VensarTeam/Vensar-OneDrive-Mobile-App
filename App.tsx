@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -41,6 +41,7 @@ function ThemedApp({ onSplashFinished, showSplash }: { onSplashFinished: () => v
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
+  const finishSplash = useCallback(() => setShowSplash(false), []);
 
   const [fontsLoaded, fontError] = useFonts({
     'GoogleSansFlex-Regular': require('./assets/fonts/google-sans-flex-regular.ttf'),
@@ -48,17 +49,13 @@ export default function App() {
     'GoogleSansFlex-Bold': require('./assets/fonts/google-sans-flex-bold.ttf'),
   });
 
-  useEffect(() => {
-    if (fontsLoaded || fontError) void SplashScreen.hideAsync();
-  }, [fontError, fontsLoaded]);
-
   if (!fontsLoaded && !fontError) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <AppThemeProvider>
-          <ThemedApp onSplashFinished={() => setShowSplash(false)} showSplash={showSplash} />
+          <ThemedApp onSplashFinished={finishSplash} showSplash={showSplash} />
         </AppThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

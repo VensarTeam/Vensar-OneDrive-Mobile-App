@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, AppState, Keyboard, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
@@ -46,9 +46,16 @@ const serviceIcons: Record<string, string> = {
 const serviceAccentColors = ['#062F7D', '#4F46E5'];
 type ServicesViewMode = 'grid' | 'list';
 
-function serviceAccent(serviceId: string) {
-  const value = [...serviceId].reduce((total, character) => total + character.charCodeAt(0), 0);
-  return serviceAccentColors[value % serviceAccentColors.length];
+function serviceAccent(serviceId: string, colorSeed: number) {
+  const value = [...serviceId].reduce(
+    (total, character) => Math.imul(total ^ character.charCodeAt(0), 16777619),
+    colorSeed,
+  );
+  return serviceAccentColors[(value >>> 0) % serviceAccentColors.length];
+}
+
+function randomColorSeed() {
+  return Math.floor(Math.random() * 0x7fffffff);
 }
 
 function getInitials(name: string) {
@@ -70,6 +77,7 @@ export function HomeScreen() {
   const { user } = useAuthSession();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [servicesViewMode, setServicesViewMode] = useState<ServicesViewMode>('grid');
+  const [serviceColorSeed, setServiceColorSeed] = useState(() => randomColorSeed());
   const searchInputRef = useRef<TextInput>(null);
   const searchWidth = useSharedValue(42);
   const columns = layout.isCompact ? 3 : 4;
@@ -87,6 +95,27 @@ export function HomeScreen() {
       searchInputRef.current?.focus();
     }
   }, [isSearchOpen]);
+
+  useEffect(() => {
+    let colorTimer: ReturnType<typeof setInterval> | undefined;
+
+    const syncColorTimer = (appState: string) => {
+      if (colorTimer) clearInterval(colorTimer);
+      colorTimer = undefined;
+      if (appState !== 'active') return;
+
+      colorTimer = setInterval(() => {
+        setServiceColorSeed(randomColorSeed());
+      }, 5 * 60 * 1000);
+    };
+
+    syncColorTimer(AppState.currentState);
+    const subscription = AppState.addEventListener('change', syncColorTimer);
+    return () => {
+      subscription.remove();
+      if (colorTimer) clearInterval(colorTimer);
+    };
+  }, []);
 
   function openSearch() {
     setIsSearchOpen(true);
@@ -314,6 +343,7 @@ export function HomeScreen() {
 
                 return (
                   <ServiceCard
+                    accent={serviceAccent(service.serviceId, serviceColorSeed)}
                     columns={columns}
                     key={service.id}
                     onPress={openService}
@@ -326,6 +356,7 @@ export function HomeScreen() {
             <Animated.View entering={FadeIn.duration(180)} style={styles.list}>
               {vm.filteredServices.map((service) => (
                 <ServiceListItem
+                  accent={serviceAccent(service.serviceId, serviceColorSeed)}
                   key={service.id}
                   onPress={() => navigation.navigate('Files', {
                     serviceId: service.serviceId,
@@ -342,9 +373,8 @@ export function HomeScreen() {
   );
 }
 
-function ServiceListItem({ onPress, service }: { onPress: () => void; service: Service }) {
+function ServiceListItem({ accent, onPress, service }: { accent: string; onPress: () => void; service: Service }) {
   const { colorScheme, theme } = useAppTheme();
-  const accent = serviceAccent(service.serviceId);
   const icon = serviceIcons[service.serviceIcon] ?? 'shape-outline';
 
   return (
@@ -380,9 +410,8 @@ function ServiceListItem({ onPress, service }: { onPress: () => void; service: S
   );
 }
 
-function ServiceCard({ columns, onPress, service }: { columns: number; onPress: () => void; service: Service }) {
+function ServiceCard({ accent, columns, onPress, service }: { accent: string; columns: number; onPress: () => void; service: Service }) {
   const { colorScheme, theme } = useAppTheme();
-  const accent = serviceAccent(service.serviceId);
   const icon = serviceIcons[service.serviceIcon] ?? 'shape-outline';
 
   return (

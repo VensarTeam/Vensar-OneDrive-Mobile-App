@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Image } from 'expo-image';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
@@ -43,8 +43,13 @@ const serviceIcons: Record<string, string> = {
   tunnels: 'tunnel-outline',
 };
 
-const serviceAccentColor = '#062F7D';
+const serviceAccentColors = ['#062F7D', '#4F46E5'];
 type ServicesViewMode = 'grid' | 'list';
+
+function serviceAccent(serviceId: string) {
+  const value = [...serviceId].reduce((total, character) => total + character.charCodeAt(0), 0);
+  return serviceAccentColors[value % serviceAccentColors.length];
+}
 
 function getInitials(name: string) {
   return name
@@ -258,6 +263,15 @@ export function HomeScreen() {
           contentInsetAdjustmentBehavior="automatic"
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
+          refreshControl={(
+            <RefreshControl
+              colors={[colors.primary]}
+              onRefresh={vm.refreshServices}
+              progressBackgroundColor={colors.surface}
+              refreshing={vm.isRefreshing}
+              tintColor={colors.primary}
+            />
+          )}
           showsVerticalScrollIndicator={false}
           style={styles.servicesScroll}
         >
@@ -330,7 +344,7 @@ export function HomeScreen() {
 
 function ServiceListItem({ onPress, service }: { onPress: () => void; service: Service }) {
   const { colorScheme, theme } = useAppTheme();
-  const accent = serviceAccentColor;
+  const accent = serviceAccent(service.serviceId);
   const icon = serviceIcons[service.serviceIcon] ?? 'shape-outline';
 
   return (
@@ -368,7 +382,7 @@ function ServiceListItem({ onPress, service }: { onPress: () => void; service: S
 
 function ServiceCard({ columns, onPress, service }: { columns: number; onPress: () => void; service: Service }) {
   const { colorScheme, theme } = useAppTheme();
-  const accent = serviceAccentColor;
+  const accent = serviceAccent(service.serviceId);
   const icon = serviceIcons[service.serviceIcon] ?? 'shape-outline';
 
   return (

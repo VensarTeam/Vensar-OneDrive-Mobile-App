@@ -9,6 +9,7 @@ export function useHomeViewModel() {
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState<string>();
   const [isLoading, setLoading] = useState(true);
+  const [isRefreshing, setRefreshing] = useState(false);
   const { showToast } = useToast();
 
   const loadServices = useCallback(async () => {
@@ -23,6 +24,20 @@ export function useHomeViewModel() {
       showToast({ message, title: 'Services unavailable', tone: 'error' });
     } finally {
       setLoading(false);
+    }
+  }, [showToast]);
+
+  const refreshServices = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      setServices(await getServices());
+      setError(undefined);
+    } catch (caughtError) {
+      const message =
+        caughtError instanceof Error ? caughtError.message : 'Unable to refresh services.';
+      showToast({ message, title: 'Refresh failed', tone: 'error' });
+    } finally {
+      setRefreshing(false);
     }
   }, [showToast]);
 
@@ -46,7 +61,9 @@ export function useHomeViewModel() {
     error,
     filteredServices,
     isLoading,
+    isRefreshing,
     loadServices,
+    refreshServices,
     searchQuery,
     serviceCount: services.length,
     setSearchQuery,

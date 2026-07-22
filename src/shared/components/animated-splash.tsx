@@ -34,11 +34,21 @@ export function AnimatedSplash({ onFinished }: { onFinished: () => void }) {
 
   return (
     <Animated.View pointerEvents="auto" style={[styles.screen, { backgroundColor: theme.colors.background }, screenStyle]}>
-      <Animated.View style={logoStyle}>
+      <Animated.View
+        style={[
+          styles.logoSurface,
+          colorScheme === 'dark' && styles.logoSurfaceDark,
+          logoStyle,
+        ]}
+      >
         <Image
           accessibilityLabel="V Drive by Vensar"
           contentFit="contain"
-          source={colorScheme === 'dark' ? require('../../../assets/onedrive-vensar-dark.png') : require('../../../assets/onedrive-vensar-light.png')}
+          source={
+            colorScheme === 'dark'
+              ? require('../../../assets/onedrive-vensar-dark.png')
+              : require('../../../assets/onedrive-vensar-light.png')
+          }
           style={styles.logo}
         />
       </Animated.View>
@@ -48,5 +58,7 @@ export function AnimatedSplash({ onFinished }: { onFinished: () => void }) {
 
 const styles = StyleSheet.create({
   logo: { height: 190, width: 190 },
+  logoSurface: { alignItems: 'center', justifyContent: 'center' },
+  logoSurfaceDark: { backgroundColor: '#020713', borderColor: 'rgba(96, 165, 250, 0.22)', borderCurve: 'continuous', borderRadius: 32, borderWidth: 1, boxShadow: '0 18px 52px rgba(0, 0, 0, 0.38)', overflow: 'hidden', padding: 8 },
   screen: { alignItems: 'center', bottom: 0, justifyContent: 'center', left: 0, position: 'absolute', right: 0, top: 0, zIndex: 9999 },
 });

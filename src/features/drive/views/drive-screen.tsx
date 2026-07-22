@@ -11,10 +11,12 @@ import { useResponsiveLayout } from '../../../core/responsive';
 import { useAppTheme } from '../../../core/theme';
 import { fontFamilies } from '../../../core/theme/typography';
 import type { HomeTabParamList } from '../../../navigation/HomeTabs';
+import { useToast } from '../../../shared/toast/toast-provider';
 import type { DriveFile, DriveFolder, DriveProject } from '../models/drive-models';
+import { prepareFileForPreview } from '../services/file-download-service';
 import { useDriveBrowserViewModel } from '../viewmodels/use-drive-browser-view-model';
-import type { SelectedResource } from './resource-action-modal';
-import { ResourceActionModal } from './resource-action-modal';
+import type { PreparedFile, SelectedResource } from './resource-action-modal';
+import { FilePreviewModal, ResourceActionModal } from './resource-action-modal';
 
 type Props = BottomTabScreenProps<HomeTabParamList, 'Files'>;
 type ViewMode = 'grid' | 'list';
@@ -24,6 +26,7 @@ export function DriveScreen({ route }: Props) {
   const responsive = useResponsiveLayout();
   const { theme } = useAppTheme();
   const { colors } = theme;
+  const { showToast } = useToast();
   const serviceId = route.params?.serviceId;
   const accessMode = route.params?.permission ?? 'owner';
   const isReadOnly = accessMode === 'viewer';
@@ -33,6 +36,9 @@ export function DriveScreen({ route }: Props) {
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [actionResources, setActionResources] = useState<SelectedResource[]>();
   const [initialMode, setInitialMode] = useState<'actions' | 'copy' | 'move' | 'share'>('actions');
+  const [openingId, setOpeningId] = useState<string>();
+  const [previewFile, setPreviewFile] = useState<PreparedFile>();
+  const openingFileRef = useRef<string | undefined>(undefined);
   const openSwipeable = useRef<SwipeableMethods | null>(null);
   const permissionNoticeContext = useRef<string | null>(null);
   const folderId = route.params?.folderId;
@@ -46,12 +52,16 @@ export function DriveScreen({ route }: Props) {
     return query ? resources.filter(({ item }) => item.name.toLocaleLowerCase().includes(query)) : resources;
   }, [resources, searchQuery]);
   const selectedResources = resources.filter(({ item }) => selectedIds.has(item.id));
+  const isSelectionMode = selectedIds.size > 0;
 
   useEffect(() => {
     openSwipeable.current?.close();
     openSwipeable.current = null;
     setSelectedIds(new Set());
     setActionResources(undefined);
+    setOpeningId(undefined);
+    openingFileRef.current = undefined;
+    setPreviewFile(undefined);
     setSearchQuery('');
     setViewMode('list');
   }, [folderId, projectId, serviceId]);
@@ -83,6 +93,20 @@ export function DriveScreen({ route }: Props) {
     return next;
   });
 
+  const openFile = async (file: DriveFile) => {
+    if (openingFileRef.current) return;
+    openingFileRef.current = file.id;
+    setOpeningId(file.id);
+    try {
+      setPreviewFile(await prepareFileForPreview(file.id, file.name, file.mimeType));
+    } catch (error) {
+      showToast({ message: error instanceof Error ? error.message : 'Unable to open this file.', tone: 'error' });
+    } finally {
+      openingFileRef.current = undefined;
+      setOpeningId(undefined);
+    }
+  };
+
   const navigateBack = useCallback(() => {
     setSelectedIds(new Set());
     setSearchQuery('');
@@ -98,13 +122,17 @@ export function DriveScreen({ route }: Props) {
   useFocusEffect(
     useCallback(() => {
       const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        if (isSelectionMode) {
+          clearSelection();
+          return true;
+        }
         if (!vm.selectedProject) return false;
         navigateBack();
         return true;
       });
 
       return () => subscription.remove();
-    }, [navigateBack, vm.selectedProject]),
+    }, [isSelectionMode, navigateBack, vm.selectedProject]),
   );
 
   return (
@@ -121,25 +149,62 @@ export function DriveScreen({ route }: Props) {
 
         {vm.selectedProject ? <View style={styles.pathBar}><Pressable accessibilityLabel="Back one level" accessibilityRole="button" onPress={navigateBack} style={[styles.backButton, { backgroundColor: colors.surface }]}><Icon color={colors.text} size={22} source="chevron-left" /></Pressable><View style={styles.pathCopy}><Text numberOfLines={1} style={[styles.pathTitle, { color: colors.text }]}>{vm.breadcrumbs.at(-1)?.name ?? vm.selectedProject.shortName}</Text><Text style={[styles.pathMeta, { color: colors.textMuted }]}>{vm.breadcrumbs.length ? `${vm.breadcrumbs.length} folders deep` : 'Project files'}</Text></View><Pressable accessibilityHint="Returns directly to project selection" accessibilityLabel="Project selection" accessibilityRole="button" onPress={navigateToProjects} style={[styles.homeButton, { backgroundColor: `${colors.primary}12`, borderColor: `${colors.primary}24` }]}><Icon color={colors.primary} size={21} source="home-outline" /></Pressable></View> : null}
         {vm.selectedProject ? <View style={styles.explorerTools}><View style={[styles.search, { backgroundColor: colors.surface, borderColor: colors.border }]}><Icon color={colors.textMuted} size={20} source="magnify" /><TextInput accessibilityLabel="Search in folder" autoCapitalize="none" autoCorrect={false} onChangeText={setSearchQuery} placeholder="Search in folder…" placeholderTextColor={colors.textMuted} style={[styles.searchInput, { color: colors.text }]} value={searchQuery} />{searchQuery ? <Pressable accessibilityLabel="Clear search" hitSlop={8} onPress={() => setSearchQuery('')}><Icon color={colors.textMuted} size={19} source="close-circle" /></Pressable> : null}</View></View> : null}
-        {vm.selectedProject && resources.length ? <View style={[styles.displayBar, { backgroundColor: colors.surface, borderColor: colors.border }]}><View style={styles.displayLeft}>{isReadOnly ? <View accessibilityLabel="View-only shared access" style={[styles.permissionBadge, { backgroundColor: colors.surfaceMuted }]}><Icon color={colors.primary} size={18} source="shield-lock-outline" /><Text style={[styles.permissionBadgeText, { color: colors.primary }]}>View only</Text></View> : <Pressable accessibilityLabel={allVisibleSelected ? 'Clear visible selection' : 'Select all visible items'} accessibilityRole="checkbox" accessibilityState={{ checked: allVisibleSelected }} onPress={toggleSelectAll} style={styles.selectAll}><Icon color={allVisibleSelected ? colors.primary : colors.textMuted} size={21} source={allVisibleSelected ? 'checkbox-marked' : 'checkbox-blank-outline'} /><Text style={[styles.selectAllText, { color: colors.text }]}>{allVisibleSelected ? 'Clear' : 'Select all'}</Text></Pressable>}<Text numberOfLines={1} style={[styles.itemCount, { color: colors.textMuted }]}>{visibleResources.length} {visibleResources.length === 1 ? 'item' : 'items'}</Text></View><View accessibilityRole="tablist" style={[styles.viewSwitch, { backgroundColor: colors.background }]}>{(['list', 'grid'] as const).map((mode) => <Pressable accessibilityLabel={`${mode} view`} accessibilityRole="tab" accessibilityState={{ selected: viewMode === mode }} key={mode} onPress={() => setViewMode(mode)} style={[styles.viewButton, { backgroundColor: viewMode === mode ? colors.surfaceMuted : 'transparent' }]}><Icon color={viewMode === mode ? colors.primary : colors.textMuted} size={20} source={mode === 'list' ? 'view-list-outline' : 'view-grid-outline'} /></Pressable>)}</View></View> : null}
+        {vm.selectedProject && resources.length ? <View style={[styles.displayBar, { backgroundColor: colors.surface, borderColor: colors.border }]}><View style={styles.displayLeft}>{isReadOnly ? <View accessibilityLabel="View-only shared access" style={[styles.permissionBadge, { backgroundColor: colors.surfaceMuted }]}><Icon color={colors.primary} size={18} source="shield-lock-outline" /><Text style={[styles.permissionBadgeText, { color: colors.primary }]}>View only</Text></View> : isSelectionMode ? <Pressable accessibilityLabel={allVisibleSelected ? 'Clear visible selection' : 'Select all visible items'} accessibilityRole="checkbox" accessibilityState={{ checked: allVisibleSelected }} onPress={toggleSelectAll} style={styles.selectAll}><Icon color={allVisibleSelected ? colors.primary : colors.textMuted} size={21} source={allVisibleSelected ? 'checkbox-marked' : 'checkbox-blank-outline'} /><Text style={[styles.selectAllText, { color: colors.text }]}>{allVisibleSelected ? 'Clear all' : 'Select all'}</Text></Pressable> : null}<Text numberOfLines={1} style={[styles.itemCount, { color: colors.textMuted }]}>{visibleResources.length} {visibleResources.length === 1 ? 'item' : 'items'}</Text></View><View accessibilityRole="tablist" style={[styles.viewSwitch, { backgroundColor: colors.background }]}>{(['list', 'grid'] as const).map((mode) => <Pressable accessibilityLabel={`${mode} view`} accessibilityRole="tab" accessibilityState={{ selected: viewMode === mode }} key={mode} onPress={() => setViewMode(mode)} style={[styles.viewButton, { backgroundColor: viewMode === mode ? colors.surfaceMuted : 'transparent' }]}><Icon color={viewMode === mode ? colors.primary : colors.textMuted} size={20} source={mode === 'list' ? 'view-list-outline' : 'view-grid-outline'} /></Pressable>)}</View></View> : null}
         {selectedResources.length ? <View style={[styles.selectionBar, { backgroundColor: colors.surface, borderColor: colors.border }]}><Pressable accessibilityLabel="Clear selection" onPress={clearSelection} style={styles.selectionCount}><Icon color={colors.primary} size={19} source="close" /><Text style={[styles.selectionText, { color: colors.text }]}>{selectedResources.length} selected</Text></Pressable><View style={styles.selectionActions}>{!isReadOnly ? <><ToolbarAction icon="content-copy" label="Copy" onPress={() => openTransfer('copy')} /><ToolbarAction icon="folder-move-outline" label="Move" onPress={() => openTransfer('move')} /></> : null}{selectedResources.length === 1 ? <ToolbarAction icon="dots-horizontal" label="More" onPress={() => { setInitialMode('actions'); setActionResources(selectedResources); }} /> : null}</View></View> : null}
 
-        {vm.isLoading ? <State loading message="Loading files…" /> : vm.error ? <State icon="cloud-alert-outline" message={vm.error} title="Couldn’t load files" /> : !serviceId ? <State icon="apps" message="Open Home and select a service to browse its projects and folders." title="Select a service" /> : !vm.selectedProject ? <ProjectList onSelect={vm.selectProject} projects={vm.projects} /> : vm.listing && visibleResources.length > 0 ? <View style={[styles.items, viewMode === 'grid' && styles.gridItems]}>{visibleResources.map((resource) => <ResourceRow isReadOnly={isReadOnly} key={`${accessMode}-${viewMode}-${resource.type}-${resource.item.id}`} onCopy={() => { setInitialMode('copy'); setActionResources([resource]); }} onLongPress={() => toggleSelection(resource)} onMore={() => { setInitialMode('actions'); setActionResources([resource]); }} onMove={() => { setInitialMode('move'); setActionResources([resource]); }} onPress={() => { if (selectedIds.size) { toggleSelection(resource); return; } if (resource.type === 'folder') { void vm.openFolder(resource.item as DriveFolder); return; } if (isReadOnly) { setInitialMode('actions'); setActionResources([resource]); return; } toggleSelection(resource); }} onSelect={() => toggleSelection(resource)} onSwipeOpen={(methods) => { if (openSwipeable.current !== methods) openSwipeable.current?.close(); openSwipeable.current = methods; }} resource={resource} selected={selectedIds.has(resource.item.id)} viewMode={viewMode} />)}</View> : <State icon={searchQuery ? 'file-search-outline' : 'folder-open-outline'} message={searchQuery ? `No items in this folder match “${searchQuery.trim()}”.` : 'This folder doesn’t contain any folders or files yet.'} title={searchQuery ? 'No results' : 'Folder is empty'} />}
+        {vm.isLoading ? <State loading message="Loading files…" /> : vm.error ? <State icon="cloud-alert-outline" message={vm.error} title="Couldn’t load files" /> : !serviceId ? <State icon="apps" message="Open Home and select a service to browse its projects and folders." title="Select a service" /> : !vm.selectedProject ? <ProjectList onSelect={vm.selectProject} projects={vm.projects} /> : vm.listing && visibleResources.length > 0 ? (
+          <View style={[styles.items, viewMode === 'grid' && styles.gridItems]}>
+            {visibleResources.map((resource) => (
+              <ResourceRow
+                isReadOnly={isReadOnly}
+                key={`${accessMode}-${viewMode}-${resource.type}-${resource.item.id}`}
+                onCopy={() => { setInitialMode('copy'); setActionResources([resource]); }}
+                onLongPress={() => toggleSelection(resource)}
+                onMore={() => { setInitialMode('actions'); setActionResources([resource]); }}
+                onMove={() => { setInitialMode('move'); setActionResources([resource]); }}
+                onOpenFile={() => resource.type === 'file' && void openFile(resource.item as DriveFile)}
+                onPress={() => {
+                  if (isSelectionMode) { toggleSelection(resource); return; }
+                  if (resource.type === 'folder') { void vm.openFolder(resource.item as DriveFolder); return; }
+                  void openFile(resource.item as DriveFile);
+                }}
+                onSelect={() => toggleSelection(resource)}
+                onSwipeOpen={(methods) => { if (openSwipeable.current !== methods) openSwipeable.current?.close(); openSwipeable.current = methods; }}
+                opening={openingId === resource.item.id}
+                resource={resource}
+                selected={selectedIds.has(resource.item.id)}
+                selectionMode={isSelectionMode}
+                viewMode={viewMode}
+              />
+            ))}
+          </View>
+        ) : <State icon={searchQuery ? 'file-search-outline' : 'folder-open-outline'} message={searchQuery ? `No items in this folder match “${searchQuery.trim()}”.` : 'This folder doesn’t contain any folders or files yet.'} title={searchQuery ? 'No results' : 'Folder is empty'} />}
       </View>
 
       {actionResources?.length && vm.selectedProject ? <ResourceActionModal accessMode={accessMode} initialMode={initialMode} onClose={() => setActionResources(undefined)} onCompleted={() => { clearSelection(); void vm.refresh(); }} projectId={vm.selectedProject.projectId} resources={actionResources} serviceId={vm.selectedProject.serviceId} /> : null}
+      {previewFile ? <FilePreviewModal file={previewFile} onClose={() => setPreviewFile(undefined)} /> : null}
     </ScrollView>
   );
 }
 
 function ProjectList({ onSelect, projects }: { onSelect: (project: DriveProject) => void; projects: DriveProject[] }) { const { theme } = useAppTheme(); return <View style={styles.projectArea}><Text style={[styles.sectionLabel, { color: theme.colors.textMuted }]}>PROJECTS</Text>{projects.length ? projects.map((project) => <Pressable key={project.id} onPress={() => onSelect(project)} style={({ pressed }) => [styles.projectCard, { backgroundColor: pressed ? theme.colors.surfaceMuted : theme.colors.surface, borderColor: theme.colors.border }]}><View style={[styles.itemIcon, { backgroundColor: `${theme.colors.primary}14` }]}><Icon color={theme.colors.primary} size={25} source="folder-star-outline" /></View><View style={styles.itemCopy}><Text numberOfLines={2} style={[styles.itemName, { color: theme.colors.text }]}>{project.name}</Text><Text numberOfLines={2} style={[styles.itemMeta, { color: theme.colors.textMuted }]}>{project.shortName}</Text></View><Icon color={theme.colors.textMuted} size={21} source="chevron-right" /></Pressable>) : <State icon="folder-search-outline" message="No projects are available for this service." title="No projects" />}</View>; }
 
-function ResourceRow({ isReadOnly, onCopy, onLongPress, onMore, onMove, onPress, onSelect, onSwipeOpen, resource, selected, viewMode }: { isReadOnly: boolean; onCopy: () => void; onLongPress: () => void; onMore: () => void; onMove: () => void; onPress: () => void; onSelect: () => void; onSwipeOpen: (methods: SwipeableMethods) => void; resource: SelectedResource; selected: boolean; viewMode: ViewMode }) {
+function ResourceRow({ isReadOnly, onCopy, onLongPress, onMore, onMove, onOpenFile, onPress, onSelect, onSwipeOpen, opening, resource, selected, selectionMode, viewMode }: { isReadOnly: boolean; onCopy: () => void; onLongPress: () => void; onMore: () => void; onMove: () => void; onOpenFile: () => void; onPress: () => void; onSelect: () => void; onSwipeOpen: (methods: SwipeableMethods) => void; opening: boolean; resource: SelectedResource; selected: boolean; selectionMode: boolean; viewMode: ViewMode }) {
   const { theme } = useAppTheme(); const { colors } = theme; const isFolder = resource.type === 'folder'; const item = resource.item; const file = !isFolder ? item as DriveFile : undefined; const meta = isFolder ? `${(item as DriveFolder).childrenCount ?? '—'} items` : formatSize(file!.size); const visual = isFolder ? { color: (item as DriveFolder).color || '#F5B700', icon: 'folder' } : getFileVisual(file!); const isGrid = viewMode === 'grid';
   const swipeableRef = useRef<SwipeableMethods>(null);
-  const row = <View style={[styles.itemRow, isGrid && styles.gridCard, { backgroundColor: selected ? `${colors.primary}12` : colors.surface, borderColor: selected ? colors.primary : colors.border }]}>{!isReadOnly ? <Pressable accessibilityLabel={selected ? `Deselect ${item.name}` : `Select ${item.name}`} accessibilityRole="checkbox" accessibilityState={{ checked: selected }} hitSlop={8} onPress={onSelect} style={[styles.checkbox, isGrid && styles.gridCheckbox]}><Icon color={selected ? colors.primary : colors.textMuted} size={23} source={selected ? 'checkbox-marked' : 'checkbox-blank-outline'} /></Pressable> : null}<Pressable accessibilityRole="button" onLongPress={isReadOnly ? undefined : onLongPress} onPress={onPress} style={[styles.itemMain, isReadOnly && styles.readOnlyItemMain, isGrid && styles.gridMain]}><View style={[styles.itemIcon, isGrid && styles.gridIcon, { backgroundColor: `${visual.color}18` }]}><Icon color={visual.color} size={isGrid ? 38 : 25} source={visual.icon} /></View><View style={[styles.itemCopy, isGrid && styles.gridCopy]}><Text numberOfLines={2} style={[styles.itemName, isGrid && styles.gridName, { color: colors.text }]}>{item.name}</Text><Text numberOfLines={1} style={[styles.itemMeta, { color: colors.textMuted }]}>{meta}</Text></View></Pressable>{isGrid ? <Pressable accessibilityLabel={`More actions for ${item.name}`} hitSlop={8} onPress={onMore} style={[styles.more, styles.gridMore]}><Icon color={colors.textMuted} size={22} source="dots-horizontal" /></Pressable> : null}</View>;
+  const longPressHandled = useRef(false);
+  const handleLongPress = () => {
+    longPressHandled.current = true;
+    onLongPress();
+    setTimeout(() => { longPressHandled.current = false; }, 600);
+  };
+  const handlePress = () => {
+    if (longPressHandled.current) { longPressHandled.current = false; return; }
+    onPress();
+  };
+  const row = <View style={[styles.itemRow, isGrid && styles.gridCard, { backgroundColor: selected ? `${colors.primary}12` : colors.surface, borderColor: selected ? colors.primary : colors.border }]}>{selectionMode && !isReadOnly ? <Pressable accessibilityLabel={selected ? `Deselect ${item.name}` : `Select ${item.name}`} accessibilityRole="checkbox" accessibilityState={{ checked: selected }} hitSlop={8} onPress={onSelect} style={[styles.checkbox, isGrid && styles.gridCheckbox]}><Icon color={selected ? colors.primary : colors.textMuted} size={23} source={selected ? 'checkbox-marked' : 'checkbox-blank-outline'} /></Pressable> : null}<Pressable accessibilityHint={isFolder ? 'Opens this folder' : 'Opens this file'} accessibilityRole="button" delayLongPress={320} disabled={opening} onLongPress={isReadOnly ? undefined : handleLongPress} onPress={handlePress} style={[styles.itemMain, (!selectionMode || isReadOnly) && styles.readOnlyItemMain, isGrid && styles.gridMain]}><View style={[styles.itemIcon, isGrid && styles.gridIcon, { backgroundColor: `${visual.color}18` }]}><Icon color={visual.color} size={isGrid ? 38 : 25} source={visual.icon} /></View><View style={[styles.itemCopy, isGrid && styles.gridCopy]}><Text numberOfLines={2} style={[styles.itemName, isGrid && styles.gridName, { color: colors.text }]}>{item.name}</Text><Text numberOfLines={1} style={[styles.itemMeta, { color: colors.textMuted }]}>{meta}</Text></View></Pressable>{!selectionMode ? <View style={[styles.itemActions, isGrid && styles.gridItemActions]}>{!isFolder ? <Pressable accessibilityLabel={`Open ${item.name}`} accessibilityRole="button" disabled={opening} hitSlop={6} onPress={onOpenFile} style={styles.openFile}>{opening ? <ActivityIndicator color={colors.primary} size="small" /> : <Icon color={colors.primary} size={22} source="eye-outline" />}</Pressable> : !isGrid ? <Icon color={colors.textMuted} size={21} source="chevron-right" /> : null}<Pressable accessibilityLabel={`More actions for ${item.name}`} accessibilityRole="button" hitSlop={6} onPress={onMore} style={styles.more}><Icon color={colors.textMuted} size={22} source="dots-horizontal" /></Pressable></View> : null}</View>;
   if (isGrid) return row;
-  return <ReanimatedSwipeable containerStyle={[styles.swipeContainer, { backgroundColor: colors.surface }]} dragOffsetFromRightEdge={12} enableTrackpadTwoFingerGesture enabled={!selected} friction={1.25} onSwipeableWillOpen={() => { if (swipeableRef.current) onSwipeOpen(swipeableRef.current); }} overshootFriction={8} overshootRight={false} ref={swipeableRef} renderRightActions={(progress, _translation, methods) => <SwipeActions isReadOnly={isReadOnly} methods={methods} onCopy={onCopy} onMore={onMore} onMove={onMove} progress={progress} />} rightThreshold={54}>{row}</ReanimatedSwipeable>;
+  return <ReanimatedSwipeable containerStyle={[styles.swipeContainer, { backgroundColor: colors.surface }]} dragOffsetFromRightEdge={12} enableTrackpadTwoFingerGesture enabled={!selectionMode && !opening} friction={1.25} onSwipeableWillOpen={() => { if (swipeableRef.current) onSwipeOpen(swipeableRef.current); }} overshootFriction={8} overshootRight={false} ref={swipeableRef} renderRightActions={(progress, _translation, methods) => <SwipeActions isReadOnly={isReadOnly} methods={methods} onCopy={onCopy} onMore={onMore} onMove={onMove} progress={progress} />} rightThreshold={54}>{row}</ReanimatedSwipeable>;
 }
 
 function SwipeActions({ isReadOnly, methods, onCopy, onMore, onMove, progress }: { isReadOnly: boolean; methods: SwipeableMethods; onCopy: () => void; onMore: () => void; onMove: () => void; progress: SharedValue<number> }) {
@@ -180,6 +245,6 @@ const styles = StyleSheet.create({
   explorerTools: { paddingTop: 14 }, search: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 16, borderWidth: 1, flexDirection: 'row', gap: 8, minHeight: 50, paddingHorizontal: 13, width: '100%' }, searchInput: { flex: 1, fontFamily: fontFamilies.regular, fontSize: 14 }, selectAll: { alignItems: 'center', flexDirection: 'row', gap: 6, minHeight: 40, paddingHorizontal: 4 }, selectAllText: { fontFamily: fontFamilies.semibold, fontSize: 12 }, permissionBadge: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 11, flexDirection: 'row', gap: 5, minHeight: 36, paddingHorizontal: 9 }, permissionBadgeText: { fontFamily: fontFamilies.semibold, fontSize: 11.5 },
   displayBar: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 8, justifyContent: 'space-between', marginTop: 10, minHeight: 50, paddingHorizontal: 7, paddingVertical: 5 }, displayLeft: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 8, minWidth: 0 }, itemCount: { flexShrink: 1, fontFamily: fontFamilies.regular, fontSize: 11, fontVariant: ['tabular-nums'] }, viewSwitch: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 11, flexDirection: 'row', gap: 2, padding: 2 }, viewButton: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 9, height: 34, justifyContent: 'center', width: 38 },
   selectionBar: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', justifyContent: 'space-between', marginTop: 14, minHeight: 58, paddingHorizontal: 8 }, selectionCount: { alignItems: 'center', flexDirection: 'row', gap: 5, minHeight: 44, paddingHorizontal: 5 }, selectionText: { fontFamily: fontFamilies.semibold, fontSize: 13, fontVariant: ['tabular-nums'] }, selectionActions: { alignItems: 'center', flexDirection: 'row' }, toolbarAction: { alignItems: 'center', gap: 2, justifyContent: 'center', minHeight: 48, minWidth: 54, paddingHorizontal: 5 }, toolbarLabel: { fontFamily: fontFamilies.semibold, fontSize: 9.5 },
-  projectArea: { gap: 9, paddingTop: 27 }, sectionLabel: { fontFamily: fontFamilies.semibold, fontSize: 11, letterSpacing: 0.8 }, projectCard: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 12, minHeight: 88, padding: 13 }, items: { gap: 8, paddingTop: 14 }, gridItems: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, swipeContainer: { borderCurve: 'continuous', borderRadius: 17, overflow: 'hidden' }, swipeActions: { flexDirection: 'row', height: '100%', marginLeft: -1, overflow: 'hidden', transformOrigin: 'left center' }, swipeAction: { alignItems: 'center', gap: 3, justifyContent: 'center', minWidth: 68, paddingHorizontal: 7 }, swipeDivider: { borderLeftWidth: StyleSheet.hairlineWidth }, swipeLabel: { fontFamily: fontFamilies.semibold, fontSize: 10.5 }, itemRow: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 17, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', minHeight: 74, paddingLeft: 7 }, gridCard: { alignItems: 'stretch', minHeight: 178, paddingLeft: 0, position: 'relative', width: '48.5%' }, checkbox: { alignItems: 'center', height: 48, justifyContent: 'center', width: 38 }, gridCheckbox: { left: 5, position: 'absolute', top: 4, zIndex: 2 }, itemMain: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 12, minHeight: 72 }, readOnlyItemMain: { paddingLeft: 13 }, gridMain: { flexDirection: 'column', gap: 9, justifyContent: 'center', paddingHorizontal: 12, paddingTop: 17 }, itemIcon: { alignItems: 'center', borderRadius: 13, height: 48, justifyContent: 'center', width: 48 }, gridIcon: { borderRadius: 18, height: 76, width: 76 }, itemCopy: { flex: 1, gap: 3 }, gridCopy: { alignItems: 'center', flex: 0 }, itemName: { fontFamily: fontFamilies.semibold, fontSize: 12, lineHeight: 19 }, gridName: { fontSize: 13, lineHeight: 17, textAlign: 'center' }, itemMeta: { fontFamily: fontFamilies.regular, fontSize: 11, lineHeight: 16 }, more: { alignItems: 'center', height: 54, justifyContent: 'center', width: 48 }, gridMore: { position: 'absolute', right: 0, top: 1 },
+  projectArea: { gap: 9, paddingTop: 27 }, sectionLabel: { fontFamily: fontFamilies.semibold, fontSize: 11, letterSpacing: 0.8 }, projectCard: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 18, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 12, minHeight: 88, padding: 13 }, items: { gap: 8, paddingTop: 14 }, gridItems: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, swipeContainer: { borderCurve: 'continuous', borderRadius: 17, overflow: 'hidden' }, swipeActions: { flexDirection: 'row', height: '100%', marginLeft: -1, overflow: 'hidden', transformOrigin: 'left center' }, swipeAction: { alignItems: 'center', gap: 3, justifyContent: 'center', minWidth: 68, paddingHorizontal: 7 }, swipeDivider: { borderLeftWidth: StyleSheet.hairlineWidth }, swipeLabel: { fontFamily: fontFamilies.semibold, fontSize: 10.5 }, itemRow: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 17, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', minHeight: 74, paddingLeft: 7 }, gridCard: { alignItems: 'stretch', minHeight: 178, paddingLeft: 0, position: 'relative', width: '48.5%' }, checkbox: { alignItems: 'center', height: 48, justifyContent: 'center', width: 38 }, gridCheckbox: { left: 5, position: 'absolute', top: 4, zIndex: 2 }, itemMain: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 12, minHeight: 72 }, readOnlyItemMain: { paddingLeft: 13 }, gridMain: { flexDirection: 'column', gap: 9, justifyContent: 'center', paddingHorizontal: 12, paddingTop: 17 }, itemIcon: { alignItems: 'center', borderRadius: 13, height: 48, justifyContent: 'center', width: 48 }, gridIcon: { borderRadius: 18, height: 76, width: 76 }, itemCopy: { flex: 1, gap: 3 }, gridCopy: { alignItems: 'center', flex: 0 }, itemName: { fontFamily: fontFamilies.semibold, fontSize: 12, lineHeight: 19 }, gridName: { fontSize: 13, lineHeight: 17, textAlign: 'center' }, itemMeta: { fontFamily: fontFamilies.regular, fontSize: 11, lineHeight: 16 }, itemActions: { alignItems: 'center', flexDirection: 'row', paddingRight: 2 }, gridItemActions: { position: 'absolute', right: 0, top: 0, zIndex: 3 }, openFile: { alignItems: 'center', height: 48, justifyContent: 'center', width: 42 }, more: { alignItems: 'center', height: 48, justifyContent: 'center', width: 40 },
   state: { alignItems: 'center', gap: 8, justifyContent: 'center', minHeight: 300, paddingHorizontal: 24 }, stateIcon: { alignItems: 'center', borderRadius: 20, height: 68, justifyContent: 'center', width: 68 }, stateTitle: { fontFamily: fontFamilies.semibold, fontSize: 17, paddingTop: 5 }, stateText: { fontFamily: fontFamilies.regular, fontSize: 13, lineHeight: 19, maxWidth: 310, textAlign: 'center' },
 });

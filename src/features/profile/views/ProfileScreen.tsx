@@ -102,16 +102,18 @@ export function ProfileScreen() {
       <View style={[styles.content, { maxWidth: responsive.maxContentWidth }]}> 
         <View style={styles.topBar}>
           <Text accessibilityRole="header" style={[styles.pageTitle, { color: colors.text }]}>Account</Text>
-          <Image
-            accessibilityLabel="V Drive by Vensar"
-            contentFit="contain"
-            source={
-              colorScheme === 'dark'
-                ? require('../../../../assets/onedrive-vensar-dark.png')
-                : require('../../../../assets/onedrive-vensar-light.png')
-            }
-            style={styles.brandLogo}
-          />
+          <View style={[styles.brandLogoSurface, colorScheme === 'dark' && styles.brandLogoSurfaceDark]}>
+            <Image
+              accessibilityLabel="V Drive by Vensar"
+              contentFit="contain"
+              source={
+                colorScheme === 'dark'
+                  ? require('../../../../assets/onedrive-vensar-dark.png')
+                  : require('../../../../assets/onedrive-vensar-light.png')
+              }
+              style={styles.brandLogo}
+            />
+          </View>
         </View>
 
         <View
@@ -239,6 +241,8 @@ const styles = StyleSheet.create({
   topBar: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', minHeight: 48 },
   pageTitle: { fontFamily: fontFamilies.bold, fontSize: 28, letterSpacing: -0.6 },
   brandLogo: { height: 48, width: 48 },
+  brandLogoSurface: { alignItems: 'center', justifyContent: 'center' },
+  brandLogoSurfaceDark: { backgroundColor: '#020713', borderColor: 'rgba(96, 165, 250, 0.22)', borderCurve: 'continuous', borderRadius: 14, borderWidth: 1, boxShadow: '0 6px 18px rgba(0, 0, 0, 0.28)', overflow: 'hidden', padding: 3 },
   profileCard: {
     alignItems: 'center',
     borderCurve: 'continuous',

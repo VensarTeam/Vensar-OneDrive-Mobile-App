@@ -121,7 +121,7 @@ export function HomeScreen() {
           ]}
         >
         <View style={styles.header}>
-          <View style={styles.brand}>
+          <View style={[styles.brand, colorScheme === 'dark' && styles.brandDark]}>
             <Image
               accessibilityLabel="V Drive by Vensar"
               contentFit="contain"
@@ -430,8 +430,9 @@ const styles = StyleSheet.create({
   servicesScroll: { flex: 1 },
   servicesContent: { paddingBottom: 24 },
   header: { alignItems: 'center', flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
-  brand: { flexShrink: 1, height: 54, justifyContent: 'center', transform: [{ translateX: -12 }], width: 144 },
-  brandLogo: { height: 64, width: 64 },
+  brand: { alignItems: 'center', flexShrink: 0, height: 64, justifyContent: 'center', width: 64 },
+  brandDark: { backgroundColor: '#020713', borderColor: 'rgba(96, 165, 250, 0.22)', borderCurve: 'continuous', borderRadius: 16, borderWidth: 1, boxShadow: '0 6px 18px rgba(0, 0, 0, 0.28)', overflow: 'hidden', padding: 4 },
+  brandLogo: { height: 56, width: 56 },
   userGreeting: { alignItems: 'center', flexDirection: 'row', flexShrink: 0, gap: 10 },
   greetingCopy: { alignItems: 'flex-end', maxWidth: 104 },
   welcomeLabel: { fontFamily: fontFamilies.regular, fontSize: 11, lineHeight: 14 },

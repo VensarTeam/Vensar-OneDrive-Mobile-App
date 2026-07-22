@@ -6,6 +6,7 @@ import { Image } from 'expo-image';
 import * as Sharing from 'expo-sharing';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Icon } from 'react-native-paper';
+import Pdf from 'react-native-pdf';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '../../../core/theme';
@@ -35,7 +36,7 @@ import { downloadAndOpenFile, prepareFileForPreview } from '../services/file-dow
 export type SelectedResource = { item: DriveFile | DriveFolder; type: DriveResourceType };
 export type PreparedFile = { fileName: string; mimeType: string; uri: string };
 type Mode = 'actions' | 'copy' | 'move' | 'share';
-type QuickAction = 'copy-link' | 'download' | 'external-share' | 'view';
+type QuickAction = 'copy-link' | 'download' | 'external-share';
 
 export function ResourceActionModal(props: {
   accessMode: 'owner' | SharePermission;
@@ -69,8 +70,6 @@ export function ResourceActionModal(props: {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isBusy, setBusy] = useState(false);
   const [activeQuickAction, setActiveQuickAction] = useState<QuickAction>();
-  const [isActionSheetVisible, setActionSheetVisible] = useState(true);
-  const [previewFile, setPreviewFile] = useState<PreparedFile>();
 
   useEffect(() => {
     if (!resource) return;
@@ -82,8 +81,6 @@ export function ResourceActionModal(props: {
     setUsers([]);
     setShare(undefined);
     setActiveQuickAction(undefined);
-    setActionSheetVisible(true);
-    setPreviewFile(undefined);
   }, [initialMode, resource]);
 
   useEffect(() => {
@@ -205,19 +202,6 @@ export function ResourceActionModal(props: {
     return prepareFileForPreview(file.id, file.name, file.mimeType);
   };
 
-  const viewFile = async () => {
-    setActiveQuickAction('view');
-    try {
-      const prepared = await prepareCurrentFile();
-      if (prepared) {
-        setActionSheetVisible(false);
-        await new Promise((resolve) => setTimeout(resolve, 220));
-        setPreviewFile(prepared);
-      }
-    } catch (error) { reportError(error, 'Unable to open file preview.'); }
-    finally { setActiveQuickAction(undefined); }
-  };
-
   const shareWithApps = async () => {
     setActiveQuickAction('external-share');
     try {
@@ -272,8 +256,7 @@ export function ResourceActionModal(props: {
   const leading = mode === 'actions' ? <Icon color={colors.primary} size={22} source={resource.type === 'folder' ? 'folder-outline' : 'file-outline'} /> : <Pressable accessibilityLabel="Back" hitSlop={10} onPress={() => initialMode !== 'actions' ? onClose() : setMode('actions')}><Icon color={colors.text} size={24} source="chevron-left" /></Pressable>;
 
   return (
-    <>
-    <BottomSheetShell leading={leading} onClose={onClose} title={mode === 'copy' || mode === 'move' ? `${mode === 'move' ? 'Move' : 'Copy'} ${resources.length > 1 ? `${resources.length} items` : `“${resource.item.name}”`} to` : mode === 'share' ? `Share “${resource.item.name}”` : resource.item.name} visible={isActionSheetVisible && !previewFile}>
+    <BottomSheetShell leading={leading} onClose={onClose} title={mode === 'copy' || mode === 'move' ? `${mode === 'move' ? 'Move' : 'Copy'} ${resources.length > 1 ? `${resources.length} items` : `“${resource.item.name}”`} to` : mode === 'share' ? `Share “${resource.item.name}”` : resource.item.name} visible>
       {mode === 'actions' ? (
         <ScrollView contentContainerStyle={styles.actions}>
           {isReadOnly ? <View style={[styles.permissionNotice, { backgroundColor: `${colors.primary}0D`, borderColor: `${colors.primary}2B` }]}><View style={[styles.permissionNoticeIcon, { backgroundColor: `${colors.primary}16` }]}><Icon color={colors.primary} size={23} source="shield-lock-outline" /></View><View style={styles.permissionNoticeCopy}><Text style={[styles.permissionNoticeTitle, { color: colors.text }]}>View-only shared access</Text><Text selectable style={[styles.permissionNoticeText, { color: colors.textMuted }]}>You can browse this shared content{resource.type === 'file' ? ' and download this file' : ''}. Copy, Move, Share, and permission changes require edit access.</Text></View></View> : null}
@@ -281,7 +264,6 @@ export function ResourceActionModal(props: {
           {!isReadOnly ? <ActionRow disabled={Boolean(activeQuickAction)} icon="link-variant" label="Copy link" loading={activeQuickAction === 'copy-link'} onPress={copyLink} /> : null}
           {!isReadOnly ? <ActionRow disabled={Boolean(activeQuickAction)} icon="content-copy" label="Copy to another folder" onPress={openCopy} /> : null}
           {!isReadOnly ? <ActionRow disabled={Boolean(activeQuickAction)} icon="folder-move-outline" label="Move to another folder" onPress={openMove} /> : null}
-          {resource.type === 'file' ? <ActionRow disabled={Boolean(activeQuickAction)} icon="eye-outline" label="View in app" loading={activeQuickAction === 'view'} onPress={viewFile} /> : null}
           {resource.type === 'file' ? <ActionRow disabled={Boolean(activeQuickAction)} icon="export-variant" label="Share to external app" loading={activeQuickAction === 'external-share'} onPress={shareWithApps} /> : null}
           {resource.type === 'file' ? <ActionRow disabled={Boolean(activeQuickAction)} icon="download-outline" label="Download" loading={activeQuickAction === 'download'} onPress={download} /> : null}
         </ScrollView>
@@ -339,8 +321,6 @@ export function ResourceActionModal(props: {
         </ScrollView>
       )}
     </BottomSheetShell>
-    {previewFile ? <FilePreviewModal file={previewFile} onClose={() => { setPreviewFile(undefined); onClose(); }} /> : null}
-    </>
   );
 }
 
@@ -351,8 +331,12 @@ export function FilePreviewModal({ file, onClose }: { file: PreparedFile; onClos
   const [textContent, setTextContent] = useState<string>();
   const isImage = file.mimeType.startsWith('image/');
   const extension = file.fileName.split('.').at(-1)?.toLocaleLowerCase();
+  const isPdf = file.mimeType.toLocaleLowerCase().includes('pdf') || extension === 'pdf';
   const isText = file.mimeType.startsWith('text/') || ['css', 'csv', 'html', 'js', 'json', 'log', 'md', 'ts', 'tsx', 'txt', 'xml'].includes(extension ?? '');
   const typeIcon = getPreviewFileIcon(file.mimeType, extension);
+  const [pdfPage, setPdfPage] = useState(1);
+  const [pdfPageCount, setPdfPageCount] = useState(0);
+  const [pdfError, setPdfError] = useState(false);
 
   useEffect(() => {
     if (!isText) return;
@@ -361,11 +345,17 @@ export function FilePreviewModal({ file, onClose }: { file: PreparedFile; onClos
     return () => { current = false; };
   }, [file.uri, isText]);
 
+  useEffect(() => {
+    setPdfPage(1);
+    setPdfPageCount(0);
+    setPdfError(false);
+  }, [file.uri]);
+
   const share = async () => {
     if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(file.uri, { dialogTitle: `Share ${file.fileName}`, mimeType: file.mimeType });
   };
 
-  return <Modal animationType="fade" onRequestClose={onClose} presentationStyle="fullScreen" visible><View style={[styles.previewScreen, { backgroundColor: colors.background, paddingBottom: insets.bottom, paddingTop: insets.top }]}><View style={[styles.previewHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}><Pressable accessibilityLabel="Close preview" hitSlop={10} onPress={onClose} style={styles.previewHeaderButton}><Icon color={colors.text} size={24} source="close" /></Pressable><View style={styles.previewTitleArea}><Icon color={colors.primary} size={20} source={typeIcon} /><Text numberOfLines={1} style={[styles.previewTitle, { color: colors.text }]}>{file.fileName}</Text></View><Pressable accessibilityLabel="Share to external app" hitSlop={10} onPress={share} style={styles.previewHeaderButton}><Icon color={colors.primary} size={23} source="export-variant" /></Pressable></View>{isImage ? <Image accessibilityLabel={file.fileName} contentFit="contain" source={file.uri} style={styles.previewImage} /> : isText ? <ScrollView contentContainerStyle={styles.textPreviewContent} style={styles.textPreview}><Text selectable style={[styles.previewText, { color: colors.text }]}>{textContent ?? 'Loading preview…'}</Text></ScrollView> : <View style={styles.unsupportedPreview}><View style={[styles.previewFileIcon, { backgroundColor: colors.surfaceMuted }]}><Icon color={colors.primary} size={42} source={typeIcon} /></View><Text style={[styles.unsupportedTitle, { color: colors.text }]}>Preview not available for this format</Text><Text style={[styles.unsupportedText, { color: colors.textMuted }]}>Use the share button to open this file in a compatible app installed on your device.</Text><Pressable onPress={share} style={[styles.openExternallyButton, { backgroundColor: colors.primary }]}><Icon color={colors.onPrimary} size={19} source="open-in-new" /><Text style={[styles.openExternallyLabel, { color: colors.onPrimary }]}>Open in another app</Text></Pressable></View>}</View></Modal>;
+  return <Modal animationType="fade" onRequestClose={onClose} presentationStyle="fullScreen" visible><View style={[styles.previewScreen, { backgroundColor: colors.background, paddingBottom: insets.bottom, paddingTop: insets.top }]}><View style={[styles.previewHeader, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}><Pressable accessibilityLabel="Close preview" hitSlop={10} onPress={onClose} style={styles.previewHeaderButton}><Icon color={colors.text} size={24} source="close" /></Pressable><View style={styles.previewTitleArea}><Icon color={colors.primary} size={20} source={typeIcon} /><Text numberOfLines={1} style={[styles.previewTitle, { color: colors.text }]}>{file.fileName}</Text></View><Pressable accessibilityLabel="Share to external app" hitSlop={10} onPress={share} style={styles.previewHeaderButton}><Icon color={colors.primary} size={23} source="export-variant" /></Pressable></View>{isPdf && !pdfError ? <View style={styles.pdfPreview}><Pdf enableAnnotationRendering enableDoubleTapZoom fitPolicy={0} maxScale={5} minScale={1} onError={() => setPdfError(true)} onLoadComplete={(totalPages) => setPdfPageCount(totalPages)} onPageChanged={(page, totalPages) => { setPdfPage(page); setPdfPageCount(totalPages); }} renderActivityIndicator={() => <ActivityIndicator color={colors.primary} size="large" />} source={{ cache: true, uri: file.uri }} spacing={12} style={[styles.pdfRenderer, { backgroundColor: colors.background }]} trustAllCerts={false} />{pdfPageCount ? <View style={[styles.pdfPageBadge, { backgroundColor: colors.surface, borderColor: colors.border }]}><Text style={[styles.pdfPageText, { color: colors.text }]}>{pdfPage} / {pdfPageCount}</Text></View> : null}</View> : isImage ? <Image accessibilityLabel={file.fileName} contentFit="contain" source={file.uri} style={styles.previewImage} /> : isText ? <ScrollView contentContainerStyle={styles.textPreviewContent} style={styles.textPreview}><Text selectable style={[styles.previewText, { color: colors.text }]}>{textContent ?? 'Loading preview…'}</Text></ScrollView> : <View style={styles.unsupportedPreview}><View style={[styles.previewFileIcon, { backgroundColor: colors.surfaceMuted }]}><Icon color={colors.primary} size={42} source={typeIcon} /></View><Text style={[styles.unsupportedTitle, { color: colors.text }]}>{pdfError ? 'Unable to display this PDF' : 'Preview not available for this format'}</Text><Text style={[styles.unsupportedText, { color: colors.textMuted }]}>{pdfError ? 'This PDF may require a password or contain invalid data. You can still open it in another PDF app.' : 'Use the button below to open this file in a compatible app installed on your device.'}</Text><Pressable accessibilityRole="button" onPress={share} style={[styles.openExternallyButton, { backgroundColor: colors.primary }]}><Icon color={colors.onPrimary} size={19} source="open-in-new" /><Text style={[styles.openExternallyLabel, { color: colors.onPrimary }]}>Open in another app</Text></Pressable></View>}</View></Modal>;
 }
 
 function getPreviewFileIcon(mimeType: string, extension?: string) {
@@ -470,7 +460,7 @@ function SelectedPeopleCard({ expanded, onRemove, onToggleExpanded, users }: { e
 }
 
 const styles = StyleSheet.create({
-  previewScreen: { flex: 1 }, previewHeader: { alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', minHeight: 56, paddingHorizontal: 8 }, previewHeaderButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 44 }, previewTitleArea: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 7, justifyContent: 'center', minWidth: 0 }, previewTitle: { flexShrink: 1, fontFamily: fontFamilies.semibold, fontSize: 15 }, previewImage: { flex: 1, margin: 12 }, textPreview: { flex: 1 }, textPreviewContent: { padding: 18 }, previewText: { fontFamily: fontFamilies.regular, fontSize: 14, lineHeight: 22 }, unsupportedPreview: { alignItems: 'center', flex: 1, gap: 10, justifyContent: 'center', padding: 28 }, previewFileIcon: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 24, height: 88, justifyContent: 'center', width: 88 }, unsupportedTitle: { fontFamily: fontFamilies.semibold, fontSize: 18, paddingTop: 8, textAlign: 'center' }, unsupportedText: { fontFamily: fontFamilies.regular, fontSize: 13, lineHeight: 20, maxWidth: 320, textAlign: 'center' }, openExternallyButton: { alignItems: 'center', borderRadius: 14, flexDirection: 'row', gap: 8, marginTop: 8, minHeight: 46, paddingHorizontal: 18 }, openExternallyLabel: { fontFamily: fontFamilies.semibold, fontSize: 13 },
+  previewScreen: { flex: 1 }, previewHeader: { alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, flexDirection: 'row', minHeight: 56, paddingHorizontal: 8 }, previewHeaderButton: { alignItems: 'center', height: 44, justifyContent: 'center', width: 44 }, previewTitleArea: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 7, justifyContent: 'center', minWidth: 0 }, previewTitle: { flexShrink: 1, fontFamily: fontFamilies.semibold, fontSize: 15 }, pdfPreview: { flex: 1, overflow: 'hidden', position: 'relative' }, pdfRenderer: { flex: 1 }, pdfPageBadge: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, bottom: 14, minWidth: 58, paddingHorizontal: 10, paddingVertical: 6, position: 'absolute', right: 14 }, pdfPageText: { fontFamily: fontFamilies.semibold, fontSize: 11, fontVariant: ['tabular-nums'] }, previewImage: { flex: 1, margin: 12 }, textPreview: { flex: 1 }, textPreviewContent: { padding: 18 }, previewText: { fontFamily: fontFamilies.regular, fontSize: 14, lineHeight: 22 }, unsupportedPreview: { alignItems: 'center', flex: 1, gap: 10, justifyContent: 'center', padding: 28 }, previewFileIcon: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 24, height: 88, justifyContent: 'center', width: 88 }, unsupportedTitle: { fontFamily: fontFamilies.semibold, fontSize: 18, paddingTop: 8, textAlign: 'center' }, unsupportedText: { fontFamily: fontFamilies.regular, fontSize: 13, lineHeight: 20, maxWidth: 320, textAlign: 'center' }, openExternallyButton: { alignItems: 'center', borderRadius: 14, flexDirection: 'row', gap: 8, marginTop: 8, minHeight: 46, paddingHorizontal: 18 }, openExternallyLabel: { fontFamily: fontFamilies.semibold, fontSize: 13 },
   flexBody: { flexShrink: 1 }, actions: { gap: 9, padding: 16 }, permissionNotice: { alignItems: 'flex-start', borderCurve: 'continuous', borderRadius: 17, borderWidth: 1, flexDirection: 'row', gap: 11, padding: 13 }, permissionNoticeIcon: { alignItems: 'center', borderRadius: 13, height: 44, justifyContent: 'center', width: 44 }, permissionNoticeCopy: { flex: 1, gap: 3 }, permissionNoticeTitle: { fontFamily: fontFamilies.semibold, fontSize: 14, lineHeight: 19 }, permissionNoticeText: { fontFamily: fontFamilies.regular, fontSize: 12, lineHeight: 18 }, actionRow: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 17, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 12, minHeight: 66, paddingHorizontal: 13 }, icon: { alignItems: 'center', borderRadius: 12, height: 42, justifyContent: 'center', width: 42 }, rowCopy: { flex: 1, gap: 2 }, rowLabel: { flexShrink: 1, fontFamily: fontFamilies.semibold, fontSize: 14, lineHeight: 19 }, rowMeta: { fontFamily: fontFamilies.regular, fontSize: 11 },
   copySearch: { paddingHorizontal: 16, paddingTop: 14 }, search: { alignItems: 'center', borderRadius: 15, borderWidth: 1, flexDirection: 'row', gap: 9, minHeight: 50, paddingHorizontal: 13 }, input: { flex: 1, fontFamily: fontFamilies.regular, fontSize: 14 }, list: { gap: 8, padding: 16 }, row: { alignItems: 'center', borderRadius: 15, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 11, minHeight: 64, padding: 10 },
   shareContent: { gap: 10, padding: 16 }, sectionLabel: { fontFamily: fontFamilies.bold, fontSize: 10.5, letterSpacing: 0.85, paddingTop: 5 }, accessChoices: { gap: 8 }, accessChoice: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 8, minHeight: 48, paddingHorizontal: 12 }, accessLabel: { fontFamily: fontFamilies.semibold, fontSize: 12 }, settingsHeader: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 15, borderWidth: 1, flexDirection: 'row', justifyContent: 'space-between', minHeight: 58, paddingHorizontal: 12 }, settingsHeaderCopy: { alignItems: 'center', flex: 1, flexDirection: 'row', gap: 10 }, settingsTitle: { fontFamily: fontFamilies.semibold, fontSize: 13 }, settingsBody: { gap: 8 }, settingField: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 14, borderWidth: 1, flexDirection: 'row', gap: 8, minHeight: 52, paddingHorizontal: 12 }, settingInput: { flex: 1, fontFamily: fontFamilies.regular, fontSize: 13 }, settingLabel: { fontFamily: fontFamilies.regular, fontSize: 10.5 }, settingValue: { fontFamily: fontFamilies.semibold, fontSize: 13 }, datePickerWrap: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 16, borderWidth: 1, overflow: 'hidden', padding: 8 }, dateDone: { alignItems: 'center', alignSelf: 'stretch', minHeight: 38, justifyContent: 'center' }, dateDoneText: { fontFamily: fontFamilies.bold, fontSize: 13 }, linkCard: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 17, borderWidth: StyleSheet.hairlineWidth, flexDirection: 'row', gap: 11, minHeight: 70, padding: 11 }, outlineButton: { alignItems: 'center', borderRadius: 12, borderWidth: 1, flexDirection: 'row', gap: 5, minHeight: 38, paddingHorizontal: 11 }, outlineLabel: { fontFamily: fontFamilies.semibold, fontSize: 12 },

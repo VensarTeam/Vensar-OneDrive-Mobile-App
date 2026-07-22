@@ -49,7 +49,7 @@ export function AuthShell({ children, subtitle, title }: AuthShellProps) {
 
         <Animated.View entering={FadeInUp.duration(520).springify().damping(18)} style={styles.content}>
           <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border, boxShadow: colorScheme === 'dark' ? '0 24px 70px rgba(0, 0, 0, 0.38)' : '0 24px 70px rgba(30, 76, 112, 0.13)', paddingHorizontal: responsive.isCompact ? 24 : 42 }]}>
-            <View style={styles.brandLockup}>
+            <View style={[styles.brandLockup, colorScheme === 'dark' && styles.brandLockupDark]}>
               <Image
                 accessibilityLabel="V Drive by Vensar"
                 contentFit="contain"
@@ -100,6 +100,7 @@ const styles = StyleSheet.create({
   content: { maxWidth: 510, width: '100%' },
   card: { borderCurve: 'continuous', borderRadius: 28, borderWidth: 1, paddingBottom: 40, paddingTop: 36 },
   brandLockup: { alignItems: 'center', alignSelf: 'center', height: 132, justifyContent: 'center', width: 132 },
+  brandLockupDark: { backgroundColor: '#020713', borderColor: 'rgba(96, 165, 250, 0.22)', borderCurve: 'continuous', borderRadius: 24, borderWidth: 1, boxShadow: '0 14px 38px rgba(0, 0, 0, 0.34)', overflow: 'hidden', padding: 6 },
   logo: { height: 132, width: 132 },
   heading: { alignItems: 'center', gap: 9, paddingTop: 27 },
   title: { fontFamily: fontFamilies.bold, fontSize: 31, letterSpacing: -0.9, lineHeight: 38, textAlign: 'center' },

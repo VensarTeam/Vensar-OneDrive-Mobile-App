@@ -7,10 +7,7 @@
     "icon": "./assets/appstore-icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": {
-        "light": "./assets/appstore-icon.png",
-        "dark": "./assets/appstore-icon-dark.png"
-      },
+      "icon": "./assets/appstore-icon.png",
       "supportsTablet": true,
       "bundleIdentifier": "com.vensar.vdrive"
     },
@@ -57,19 +54,6 @@
             "image": "./assets/transparent-splash.svg"
           }
         }
-      ],
-      [
-        "expo-alternate-app-icons",
-        [
-          {
-            "name": "Dark",
-            "ios": "./assets/appstore-icon-dark.png",
-            "android": {
-              "foregroundImage": "./assets/playstore-icon-dark-foreground.png",
-              "backgroundColor": "#000000"
-            }
-          }
-        ]
       ],
       "expo-sharing"
     ]

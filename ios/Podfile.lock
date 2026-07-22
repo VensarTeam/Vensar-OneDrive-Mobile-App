@@ -29,8 +29,6 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
-  - ExpoAlternateAppIcons (8.0.0):
-    - ExpoModulesCore
   - ExpoAsset (57.0.3):
     - ExpoModulesCore
   - ExpoClipboard (57.0.0):
@@ -1525,6 +1523,50 @@ PODS:
     - ReactCommon/turbomodule/core
     - ReactNativeDependencies
     - Yoga
+  - react-native-blob-util (0.24.5):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
+  - react-native-pdf (7.0.4):
+    - hermes-engine
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-Core-prebuilt
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - ReactNativeDependencies
+    - Yoga
   - react-native-safe-area-context (5.7.0):
     - hermes-engine
     - RCTRequired
@@ -2280,7 +2322,6 @@ DEPENDENCIES:
   - EXApplication (from `../node_modules/expo-auth-session/node_modules/expo-application/ios`)
   - EXConstants (from `../node_modules/expo-constants/ios`)
   - Expo (from `../node_modules/expo`)
-  - ExpoAlternateAppIcons (from `../node_modules/expo-alternate-app-icons/ios`)
   - ExpoAsset (from `../node_modules/expo/node_modules/expo-asset/ios`)
   - ExpoClipboard (from `../node_modules/expo-clipboard/ios`)
   - ExpoCrypto (from `../node_modules/expo-auth-session/node_modules/expo-crypto/ios`)
@@ -2341,6 +2382,8 @@ DEPENDENCIES:
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
   - React-mutationobservernativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/mutationobserver`)
+  - react-native-blob-util (from `../node_modules/react-native-blob-util`)
+  - react-native-pdf (from `../node_modules/react-native-pdf`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-networking (from `../node_modules/react-native/ReactCommon/react/networking`)
@@ -2392,8 +2435,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-constants/ios"
   Expo:
     :path: "../node_modules/expo"
-  ExpoAlternateAppIcons:
-    :path: "../node_modules/expo-alternate-app-icons/ios"
   ExpoAsset:
     :path: "../node_modules/expo/node_modules/expo-asset/ios"
   ExpoClipboard:
@@ -2513,6 +2554,10 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
   React-mutationobservernativemodule:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/mutationobserver"
+  react-native-blob-util:
+    :path: "../node_modules/react-native-blob-util"
+  react-native-pdf:
+    :path: "../node_modules/react-native-pdf"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
   React-NativeModulesApple:
@@ -2604,7 +2649,6 @@ SPEC CHECKSUMS:
   EXApplication: 7283a281903a90230466ab545ab87a8c48cf4e12
   EXConstants: d069b4a2dd469d5a3a4d3d7b09757e708fda8f64
   Expo: cfb5f1189dfb9bd5ccc7701ceb2879d326c253e9
-  ExpoAlternateAppIcons: 8a7cb9b311700b92fb13652d1087beb2efdb9d84
   ExpoAsset: 586e89aeaab2e23bfa90b9dce4d7d5e36815c039
   ExpoClipboard: 67d46a8be4a50ec610c7b2f4966c0475aec6d969
   ExpoCrypto: f9db7ec10f772afa112c0e465f34bedbc38adf5f
@@ -2664,6 +2708,8 @@ SPEC CHECKSUMS:
   React-Mapbuffer: ce449ccdf3b80384415b925606be8a4bdcfc65d3
   React-microtasksnativemodule: 2eb3f49d0d8e77b5343455eccd057010b8d38b6b
   React-mutationobservernativemodule: f0a0d5ae9b51caf7becbeabf836d716cfedb6bf2
+  react-native-blob-util: bc5d956a88be01ee8045823a24af0cf3ba98bd08
+  react-native-pdf: 2bc0989bc44ef7e5221c49c0f1bb464a2c27640b
   react-native-safe-area-context: 6b4966397ada0f7dd481e4486a2ef936834861a1
   React-NativeModulesApple: a092d89b58f635ebfab88048b0eda9fb516819fd
   React-networking: 968bbbe73590149feb1e72b2af4f6a68e4796ece

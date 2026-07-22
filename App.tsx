@@ -6,7 +6,6 @@ import { configureFonts, MD3DarkTheme, MD3LightTheme, PaperProvider } from 'reac
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { RootView } from './src/bootstrap/RootView';
-import { useSystemAppIcon } from './src/core/hooks/useSystemAppIcon';
 import { AppThemeProvider, useAppTheme } from './src/core/theme/AppThemeProvider';
 import { completePendingAuthSession } from './src/features/auth/services/authSessionService';
 import { AnimatedSplash } from './src/shared/components/animated-splash';
@@ -41,7 +40,6 @@ function ThemedApp({ onSplashFinished, showSplash }: { onSplashFinished: () => v
 }
 
 export default function App() {
-  useSystemAppIcon();
   const [showSplash, setShowSplash] = useState(true);
 
   const [fontsLoaded, fontError] = useFonts({

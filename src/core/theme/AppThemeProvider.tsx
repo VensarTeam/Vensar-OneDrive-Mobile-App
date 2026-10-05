@@ -19,9 +19,7 @@ const colorSchemePreferenceKey = 'appearance.color-scheme';
 const AppThemeContext = createContext<AppThemeContextValue | null>(null);
 
 export function AppThemeProvider({ children }: PropsWithChildren) {
-  const systemColorScheme = useColorScheme();
-  const systemDefault: AppColorScheme = systemColorScheme === 'dark' ? 'dark' : 'light';
-  const [colorScheme, setColorSchemeState] = useState<AppColorScheme>(systemDefault);
+  const [colorScheme, setColorSchemeState] = useState<AppColorScheme>('light');
 
   useEffect(() => {
     let isMounted = true;

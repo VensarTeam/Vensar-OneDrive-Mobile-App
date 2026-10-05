@@ -20,7 +20,11 @@
       "versionCode": 1,
       "softwareKeyboardLayoutMode": "resize",
       "predictiveBackGestureEnabled": false,
-      "package": "com.vensar.vdrive"
+      "package": "com.vensar.vdrive",
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -42,20 +46,29 @@
       "expo-web-browser",
       "expo-image",
       "expo-font",
+      "expo-sharing",
+      
       [
         "expo-splash-screen",
         {
           "backgroundColor": "#F7FBFF",
-          "image": "./assets/transparent-splash.svg",
-          "imageWidth": 1,
+          "image": "./assets/vdrive-center-logo.png",
+          "imageWidth": 190,
           "resizeMode": "contain",
           "dark": {
             "backgroundColor": "#F7FBFF",
-            "image": "./assets/transparent-splash.svg"
+            "image": "./assets/vdrive-center-logo.png"
           }
         }
       ],
-      "expo-sharing"
-    ]
+      [
+  "expo-build-properties"
+]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e9771b41-896a-491c-ae78-4b72388ab2e4"
+      }
+    }
   }
 }

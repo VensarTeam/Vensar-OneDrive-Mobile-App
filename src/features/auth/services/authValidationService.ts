@@ -3,9 +3,9 @@ import type { AuthCredentials, AuthFieldErrors } from '../models/authCredentials
 export function validateCredentials(credentials: AuthCredentials): AuthFieldErrors {
   const errors: AuthFieldErrors = {};
 
-  if (credentials.loginId.trim().length < 3) {
-    errors.loginId = 'Enter your mobile number or work email.';
-  }
+  if (!/^\d{10}$/.test(credentials.loginId.trim())) {
+  errors.loginId = 'Enter mobile number';
+}
 
   if (credentials.password.length < 8) {
     errors.password = 'Password must contain at least 8 characters.';

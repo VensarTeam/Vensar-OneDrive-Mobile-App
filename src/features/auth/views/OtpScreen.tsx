@@ -31,7 +31,10 @@ export function OtpScreen({ navigation, route }: Props) {
   const { colors } = theme;
   const complete = useCallback(() => navigation.replace('Home'), [navigation]);
   const vm = useOtpViewModel(route.params.identifier, complete);
-  const deliveryDestination = [route.params.email, route.params.mobile].filter(Boolean).join(' or ');
+  const email = route.params.email;
+const deliveryDestination = email
+  ? `${email.slice(0, 2)}${"*".repeat(Math.max(0, email.indexOf("@") - 2))}${email.slice(email.indexOf("@"))}`
+  : "";
   const isVerifying = vm.isAutoVerifying || vm.isSubmitting || vm.isVerified;
 
   useEffect(() => {
@@ -70,7 +73,7 @@ export function OtpScreen({ navigation, route }: Props) {
 
   return (
     <AuthShell
-      subtitle={`Enter the code sent to ${deliveryDestination || route.params.identifier}`}
+      subtitle={`Enter the code sent to ${deliveryDestination}`}
       title="Verify it’s you"
     >
       <Pressable
@@ -214,15 +217,59 @@ function OtpDigit({
 const styles = StyleSheet.create({
   codeArea: { width: '100%' },
   hiddenInput: { height: 1, opacity: 0, position: 'absolute', width: 1 },
-  codeTrack: { height: 68, position: 'relative', width: '100%' },
-  digit: { alignItems: 'center', borderCurve: 'continuous', borderRadius: 14, borderWidth: 1.5, height: 60, justifyContent: 'center', position: 'absolute', top: 4 },
-  digitText: { fontFamily: fontFamilies.bold, fontSize: 24, fontVariant: ['tabular-nums'] },
-  statusCircle: { alignItems: 'center', borderRadius: 30, borderWidth: 1.5, height: 60, justifyContent: 'center', left: '50%', marginLeft: -30, position: 'absolute', top: 4, width: 60 },
-  successRing: { borderRadius: 30, borderWidth: 1.5, height: 60, position: 'absolute', width: 60 },
+ codeTrack: { height: 60, position: 'relative', width: '100%' },
+
+digit: {
+  alignItems: 'center',
+  borderCurve: 'continuous',
+  borderRadius: 14,
+  borderWidth: 1.5,
+  height: 54,
+  justifyContent: 'center',
+  position: 'absolute',
+  top: 3,
+},
+  digitText: {
+  fontFamily: fontFamilies.bold,
+  fontSize: 25,
+  fontVariant: ['tabular-nums'],
+},
+  statusCircle: {
+  alignItems: 'center',
+  borderRadius: 27,
+  borderWidth: 1.5,
+  height: 54,
+  justifyContent: 'center',
+  left: '50%',
+  marginLeft: -27,
+  position: 'absolute',
+  top: 3,
+  width: 54,
+},
+  successRing: {
+  borderRadius: 27,
+  borderWidth: 1.5,
+  height: 54,
+  position: 'absolute',
+  width: 54,
+},
   centerText: { fontFamily: fontFamilies.regular, fontSize: 13, textAlign: 'center' },
-  expiryRow: { alignItems: 'flex-end', minHeight: 22, width: '100%' },
-  expiryText: { fontFamily: fontFamilies.regular, fontSize: 13, lineHeight: 20 },
-  expiryTime: { fontFamily: fontFamilies.semibold, fontVariant: ['tabular-nums'] },
+  expiryRow: {
+  alignItems: 'center',
+  justifyContent: 'center',
+  minHeight: 30,
+  marginTop: 4,
+  width: '100%',
+},
+ expiryText: {
+  fontFamily: fontFamilies.regular,
+  fontSize: 14,
+  lineHeight: 21,
+},
+  expiryTime: {
+  fontFamily: fontFamilies.semibold,
+  fontVariant: ['tabular-nums'],
+},
   successText: { fontFamily: fontFamilies.semibold, fontSize: 13, lineHeight: 20 },
   resendLink: { fontFamily: fontFamilies.semibold, fontSize: 14, lineHeight: 20 },
   backAction: { alignSelf: 'center', paddingHorizontal: 12, paddingVertical: 2 },

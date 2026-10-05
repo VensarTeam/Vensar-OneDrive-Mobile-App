@@ -9,26 +9,53 @@ type AuthInputProps = ComponentProps<typeof TextInput> & {
   errorMessage?: string;
 };
 
-export function AuthInput({ errorMessage, style, ...props }: AuthInputProps) {
+export function AuthInput({
+  errorMessage,
+  style,
+  ...props
+}: AuthInputProps) {
   const { theme } = useAppTheme();
   const { colors } = theme;
 
   return (
     <View style={styles.field}>
       <TextInput
-        activeOutlineColor={colors.primary}
+        activeOutlineColor="#78AEE0"
+        cursorColor="#78AEE0"
         error={Boolean(errorMessage)}
         mode="outlined"
-        outlineColor={colors.border}
+        outlineColor="#6D89A8"
         outlineStyle={styles.outline}
-        selectionColor={colors.primary}
-        style={[styles.input, { backgroundColor: colors.surfaceMuted }, style]}
-        textColor={colors.text}
-        theme={{ colors: { error: colors.danger, onSurfaceVariant: colors.textMuted } }}
+        selectionColor="#78AEE0"
+        style={[
+          styles.input,
+          {
+            backgroundColor: '#F7F9FC',
+          },
+          style,
+        ]}
+        textColor="#66768A"
+        placeholderTextColor="#C0CCDB"
+        theme={{
+          colors: {
+            error: colors.danger,
+            onSurfaceVariant: '#6D7D91',
+          },
+        }}
         {...props}
       />
+
       {errorMessage ? (
-        <Text accessibilityRole="alert" selectable style={[styles.error, { color: colors.danger }]}>
+        <Text
+          accessibilityRole="alert"
+          selectable
+          style={[
+            styles.error,
+            {
+              color: colors.danger,
+            },
+          ]}
+        >
           {errorMessage}
         </Text>
       ) : null}
@@ -37,8 +64,26 @@ export function AuthInput({ errorMessage, style, ...props }: AuthInputProps) {
 }
 
 const styles = StyleSheet.create({
-  field: { gap: 6 },
-  input: { fontFamily: fontFamilies.regular, fontSize: 16, height: 60 },
-  outline: { borderCurve: 'continuous', borderRadius: 14 },
-  error: { fontFamily: fontFamilies.regular, fontSize: 12, lineHeight: 17, paddingHorizontal: 4 },
+  field: {
+    gap: 5,
+  },
+
+  input: {
+    fontFamily: fontFamilies.regular,
+    fontSize: 16,
+    height: 60,
+  },
+
+  outline: {
+    borderCurve: 'continuous',
+    borderRadius: 17,
+    borderWidth: 1,
+  },
+
+  error: {
+    fontFamily: fontFamilies.regular,
+    fontSize: 12,
+    lineHeight: 17,
+    paddingHorizontal: 4,
+  },
 });

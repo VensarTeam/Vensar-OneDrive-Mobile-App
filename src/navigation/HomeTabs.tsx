@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '../core/theme';
 import { fontFamilies } from '../core/theme/typography';
+import { useAuthSession } from '../features/auth/services/auth-session-provider';
 import { HomeScreen } from '../features/home/views/HomeScreen';
 import { DriveScreen } from '../features/drive/views/drive-screen';
 import { SharedScreen } from '../features/drive/views/shared-screen';
@@ -21,6 +22,7 @@ export type HomeTabParamList = {
     permission?: 'admin' | 'editor' | 'viewer';
     serviceId?: string;
     serviceName?: string;
+    openFileId?: string;
   } | undefined;
   Shared: undefined;
   Profile: undefined;
@@ -28,27 +30,108 @@ export type HomeTabParamList = {
 
 const Tab = createBottomTabNavigator<HomeTabParamList>();
 
-const tabIcons: Record<keyof HomeTabParamList, { active: string; inactive: string }> = {
-  Dashboard: { active: 'home-variant', inactive: 'home-variant-outline' },
-  Files: { active: 'folder', inactive: 'folder-outline' },
-  Shared: { active: 'account-multiple', inactive: 'account-multiple-outline' },
-  Profile: { active: 'account-circle', inactive: 'account-circle-outline' },
+const tabIcons: Record<
+  keyof HomeTabParamList,
+  { active: string; inactive: string }
+> = {
+  Dashboard: {
+    active: 'home-variant',
+    inactive: 'home-variant-outline',
+  },
+  Files: {
+    active: 'folder',
+    inactive: 'folder-outline',
+  },
+  Shared: {
+    active: 'account-multiple',
+    inactive: 'account-multiple-outline',
+  },
+  Profile: {
+    active: 'account-circle',
+    inactive: 'account-circle-outline',
+  },
 };
 
-function TabIcon({ color, focused, route }: { color: string; focused: boolean; route: keyof HomeTabParamList }) {
+function getInitials(name?: string | null) {
+  if (!name?.trim()) {
+    return 'U';
+  }
+
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
+function TabIcon({
+  color,
+  focused,
+  route,
+}: {
+  color: string;
+  focused: boolean;
+  route: keyof HomeTabParamList;
+}) {
   const { theme } = useAppTheme();
+  const { user } = useAuthSession();
+
+  if (route === 'Profile') {
+    return (
+      <View
+        style={[
+          styles.avatar,
+          {
+            backgroundColor: focused
+              ? `${theme.colors.primary}18`
+              : theme.colors.surfaceMuted,
+            borderColor: focused
+              ? `${theme.colors.primary}55`
+              : theme.colors.border,
+            transform: [{ scale: focused ? 1.04 : 1 }],
+          },
+        ]}
+      >
+        <Text
+          style={[
+            styles.avatarText,
+            {
+              color: focused
+                ? theme.colors.primary
+                : theme.colors.textMuted,
+            },
+          ]}
+        >
+          {getInitials(user?.name)}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View
       style={[
         styles.iconPill,
-        { backgroundColor: focused ? `${theme.colors.primary}18` : 'transparent' },
+        {
+          backgroundColor: focused
+            ? `${theme.colors.primary}16`
+            : 'transparent',
+        },
       ]}
     >
       <Icon
         color={color}
-        size={focused ? 24 : 23}
-        source={tabIcons[route][focused ? 'active' : 'inactive']}
+        size={focused ? 24 : 22}
+        source={
+          tabIcons[route][
+            focused ? 'active' : 'inactive'
+          ]
+        }
       />
     </View>
   );
@@ -60,10 +143,16 @@ function TabButton(props: BottomTabBarButtonProps) {
   return (
     <PlatformPressable
       {...props}
-      hoverEffect={{ color: `${theme.colors.primary}12`, hoverOpacity: 1 }}
+      hoverEffect={{
+        color: `${theme.colors.primary}10`,
+        hoverOpacity: 1,
+      }}
       pressColor={`${theme.colors.primary}18`}
       pressOpacity={0.76}
-      style={[props.style, styles.tabButton]}
+      style={[
+        props.style,
+        styles.tabButton,
+      ]}
     />
   );
 }
@@ -78,60 +167,141 @@ export function HomeTabs() {
       backBehavior="history"
       screenOptions={({ route }) => ({
         headerShown: false,
+
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarIcon: ({ color, focused }) => (
-          <TabIcon color={color} focused={focused} route={route.name} />
+
+        tabBarIcon: ({
+          color,
+          focused,
+        }) => (
+          <TabIcon
+            color={color}
+            focused={focused}
+            route={route.name}
+          />
         ),
-        tabBarLabel: ({ color, focused, children }) => (
+
+        tabBarLabel: ({
+          color,
+          focused,
+          children,
+        }) => (
           <Text
             style={[
               styles.label,
               {
                 color,
-                fontFamily: focused ? fontFamilies.bold : fontFamilies.semibold,
-                opacity: focused ? 1 : 0.78,
+                fontFamily: focused
+                  ? fontFamilies.bold
+                  : fontFamilies.semibold,
+                opacity: focused ? 1 : 0.72,
               },
             ]}
           >
             {children}
           </Text>
         ),
+
         tabBarHideOnKeyboard: true,
-        tabBarButton: (props) => <TabButton {...props} />,
+
+        tabBarButton: (props) => (
+          <TabButton {...props} />
+        ),
+
         tabBarItemStyle: styles.tabItem,
+
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderColor: colors.border,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
           borderTopWidth: StyleSheet.hairlineWidth,
-          boxShadow: colorScheme === 'dark' ? '0 -8px 30px rgba(0, 0, 0, 0.34)' : '0 -8px 30px rgba(15, 23, 42, 0.09)',
-          height: 68 + insets.bottom,
-          paddingBottom: Math.max(insets.bottom, 9),
+
+          boxShadow:
+            colorScheme === 'dark'
+              ? '0 -8px 30px rgba(0, 0, 0, 0.34)'
+              : '0 -8px 30px rgba(15, 23, 42, 0.09)',
+
+          height: 70 + insets.bottom,
+          paddingBottom: Math.max(
+            insets.bottom,
+            9,
+          ),
           paddingHorizontal: 10,
-          paddingTop: 8,
+          paddingTop: 7,
         },
       })}
     >
-      <Tab.Screen name="Dashboard" component={HomeScreen} options={{ tabBarLabel: 'Home' }} />
-      <Tab.Screen name="Files" component={DriveScreen} />
-      <Tab.Screen name="Shared" component={SharedScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen
+        name="Dashboard"
+        component={HomeScreen}
+        options={{
+          tabBarLabel: 'Home',
+        }}
+      />
+
+      <Tab.Screen
+        name="Files"
+        component={DriveScreen}
+      />
+
+      <Tab.Screen
+        name="Shared"
+        component={SharedScreen}
+      />
+
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Profile',
+        }}
+      />
     </Tab.Navigator>
   );
 }
 
 const styles = StyleSheet.create({
-  tabButton: { borderCurve: 'continuous', borderRadius: 18, overflow: 'hidden' },
-  tabItem: { borderRadius: 18, paddingVertical: 2 },
+  tabButton: {
+    borderCurve: 'continuous',
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+
+  tabItem: {
+    borderRadius: 18,
+    paddingVertical: 2,
+  },
+
   iconPill: {
     alignItems: 'center',
     borderCurve: 'continuous',
     borderRadius: 16,
-    height: 31,
+    height: 32,
     justifyContent: 'center',
     width: 48,
   },
-  label: { fontSize: 10.5, letterSpacing: 0.1, lineHeight: 14 },
+
+  avatar: {
+    alignItems: 'center',
+    borderCurve: 'continuous',
+    borderRadius: 16,
+    borderWidth: 1,
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
+  },
+
+  avatarText: {
+    fontFamily: fontFamilies.bold,
+    fontSize: 10.5,
+    letterSpacing: 0.2,
+  },
+
+  label: {
+    fontSize: 10.5,
+    letterSpacing: 0.1,
+    lineHeight: 14,
+  },
 });

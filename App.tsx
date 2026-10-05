@@ -1,12 +1,24 @@
 import { useCallback, useState } from 'react';
-import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  initialWindowMetrics,
+  SafeAreaProvider,
+} from 'react-native-safe-area-context';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
-import { configureFonts, MD3DarkTheme, MD3LightTheme, PaperProvider } from 'react-native-paper';
+import {
+  configureFonts,
+  MD3DarkTheme,
+  MD3LightTheme,
+  PaperProvider,
+} from 'react-native-paper';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { RootView } from './src/bootstrap/RootView';
-import { AppThemeProvider, useAppTheme } from './src/core/theme/AppThemeProvider';
+import { SplashGateProvider } from './src/bootstrap/SplashGate';
+import {
+  AppThemeProvider,
+  useAppTheme,
+} from './src/core/theme/AppThemeProvider';
 import { completePendingAuthSession } from './src/features/auth/services/authSessionService';
 import { AnimatedSplash } from './src/shared/components/animated-splash';
 
@@ -14,11 +26,24 @@ completePendingAuthSession();
 void SplashScreen.preventAutoHideAsync();
 SplashScreen.setOptions({ duration: 0, fade: false });
 
-const paperFonts = configureFonts({ config: { fontFamily: 'GoogleSansFlex-Regular' } });
+const paperFonts = configureFonts({
+  config: {
+    fontFamily: 'GoogleSansFlex-Regular',
+  },
+});
 
-function ThemedApp({ onSplashFinished, showSplash }: { onSplashFinished: () => void; showSplash: boolean }) {
+function ThemedApp({
+  onSplashFinished,
+  showSplash,
+}: {
+  onSplashFinished: () => void;
+  showSplash: boolean;
+}) {
   const { colorScheme, theme } = useAppTheme();
-  const baseTheme = colorScheme === 'dark' ? MD3DarkTheme : MD3LightTheme;
+
+  const baseTheme =
+    colorScheme === 'dark' ? MD3DarkTheme : MD3LightTheme;
+
   const paperTheme = {
     ...baseTheme,
     colors: {
@@ -36,12 +61,24 @@ function ThemedApp({ onSplashFinished, showSplash }: { onSplashFinished: () => v
     fonts: paperFonts,
   };
 
-  return <PaperProvider theme={paperTheme}><RootView />{showSplash ? <AnimatedSplash onFinished={onSplashFinished} /> : null}</PaperProvider>;
+  return (
+    <PaperProvider theme={paperTheme}>
+      <SplashGateProvider value={!showSplash}>
+        <RootView />
+        {showSplash ? (
+          <AnimatedSplash onFinished={onSplashFinished} />
+        ) : null}
+      </SplashGateProvider>
+    </PaperProvider>
+  );
 }
 
 export default function App() {
   const [showSplash, setShowSplash] = useState(true);
-  const finishSplash = useCallback(() => setShowSplash(false), []);
+
+  const finishSplash = useCallback(() => {
+    setShowSplash(false);
+  }, []);
 
   const [fontsLoaded, fontError] = useFonts({
     'GoogleSansFlex-Regular': require('./assets/fonts/google-sans-flex-regular.ttf'),
@@ -55,7 +92,10 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <AppThemeProvider>
-          <ThemedApp onSplashFinished={finishSplash} showSplash={showSplash} />
+          <ThemedApp
+            onSplashFinished={finishSplash}
+            showSplash={showSplash}
+          />
         </AppThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

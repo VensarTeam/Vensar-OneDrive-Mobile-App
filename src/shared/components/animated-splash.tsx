@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SplashScreen from 'expo-splash-screen';
@@ -20,71 +20,207 @@ const RING_RADIUS = (RING_SIZE - RING_STROKE) / 2;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-export function AnimatedSplash({ onFinished }: { onFinished: () => void }) {
-  const contentOpacity = useSharedValue(0.18);
-  const contentTranslateY = useSharedValue(18);
-  const glowOpacity = useSharedValue(0.12);
-  const logoScale = useSharedValue(1.28);
+export function AnimatedSplash({
+  onFinished,
+}: {
+  onFinished: () => void;
+}) {
+  /*
+   * =========================================================
+   * INITIAL STATE
+   * =========================================================
+   *
+   * The native Android splash already shows the V Drive logo.
+   *
+   * Therefore, when React Native takes over:
+   *
+   *   - logo is already fully visible
+   *   - no vertical movement
+   *   - no logo scaling
+   *
+   * This makes the handoff much smoother.
+   */
+  const contentOpacity =
+    useSharedValue(1);
+
+  const contentTranslateY =
+    useSharedValue(0);
+
+  const logoScale =
+    useSharedValue(1);
+
+  /*
+   * Ring rotation.
+   */
   const ringOffset = useSharedValue(RING_CIRCUMFERENCE);
-  const screenOpacity = useSharedValue(1);
+
+  const screenOpacity =
+    useSharedValue(1);
 
   useEffect(() => {
+    /*
+     * =========================================================
+     * LOGO
+     * =========================================================
+     *
+     * The logo doesn't jump when native splash hands over.
+     */
     contentOpacity.value = withTiming(1, {
-      duration: 650,
-      easing: Easing.out(Easing.quad),
+      duration: 120,
+      easing: Easing.linear,
     });
+
     contentTranslateY.value = withTiming(0, {
-      duration: 900,
-      easing: Easing.out(Easing.cubic),
+      duration: 120,
+      easing: Easing.linear,
     });
-    glowOpacity.value = withTiming(0.3, {
-      duration: 900,
-      easing: Easing.out(Easing.quad),
+
+    logoScale.value = withTiming(1, {
+      duration: 120,
+      easing: Easing.linear,
     });
-    logoScale.value = withTiming(0.92, {
-      duration: 1_100,
-      easing: Easing.out(Easing.cubic),
-    });
-    ringOffset.value = withTiming(0, {
-      duration: 1_250,
-      easing: Easing.out(Easing.cubic),
-    });
-    screenOpacity.value = withDelay(
-      2_150,
-      withTiming(0, { duration: 360, easing: Easing.inOut(Easing.cubic) }, (finished) => {
-        if (finished) runOnJS(onFinished)();
+
+    /*
+     * =========================================================
+     * BLUE RING
+     * =========================================================
+     *
+     * Draw the blue ring once around the logo.
+     */
+    ringOffset.value = withDelay(
+      180,
+      withTiming(0, {
+        duration: 1_250,
+        easing: Easing.out(Easing.cubic),
       }),
     );
-  }, [contentOpacity, contentTranslateY, glowOpacity, logoScale, onFinished, ringOffset, screenOpacity]);
 
+    /*
+     * =========================================================
+     * SPLASH EXIT
+     * =========================================================
+     *
+     * Keep your existing 2.5 second duration.
+     */
+    screenOpacity.value = withDelay(
+      2_500,
+      withTiming(
+        0,
+        {
+          duration: 360,
+          easing: Easing.inOut(Easing.cubic),
+        },
+        (finished) => {
+          if (finished) {
+            runOnJS(onFinished)();
+          }
+        },
+      ),
+    );
+  }, [
+    contentOpacity,
+    contentTranslateY,
+    logoScale,
+    onFinished,
+    ringOffset,
+    screenOpacity,
+  ]);
+
+  /*
+   * ===========================================================
+   * CONTENT STYLE
+   * ===========================================================
+   */
   const contentStyle = useAnimatedStyle(() => ({
     opacity: contentOpacity.value,
-    transform: [{ translateY: contentTranslateY.value }],
+
+    transform: [
+      {
+        translateY:
+          contentTranslateY.value,
+      },
+    ],
   }));
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: glowOpacity.value,
-    transform: [{ scale: logoScale.value }],
+
+  /*
+   * ===========================================================
+   * LOGO STYLE
+   * ===========================================================
+   */
+  const logoStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale: logoScale.value,
+      },
+    ],
   }));
-  const logoStyle = useAnimatedStyle(() => ({ transform: [{ scale: logoScale.value }] }));
-  const ringProps = useAnimatedProps(() => ({ strokeDashoffset: ringOffset.value }));
-  const screenStyle = useAnimatedStyle(() => ({ opacity: screenOpacity.value }));
+
+  const ringProps = useAnimatedProps(() => ({
+    strokeDashoffset: ringOffset.value,
+  }));
+
+  /*
+   * ===========================================================
+   * SCREEN FADE
+   * ===========================================================
+   */
+  const screenStyle = useAnimatedStyle(() => ({
+    opacity: screenOpacity.value,
+  }));
 
   return (
     <Animated.View
-      onLayout={() => void SplashScreen.hideAsync()}
+      onLayout={() =>
+        void SplashScreen.hideAsync()
+      }
       pointerEvents="auto"
-      style={[styles.screen, screenStyle]}
+      style={[
+        styles.screen,
+        screenStyle,
+      ]}
     >
+      {/* ======================================================= */}
+      {/* BACKGROUND                                             */}
+      {/* ======================================================= */}
+
       <LinearGradient
-        colors={['#F7FBFF', '#E8F4FF', '#FDFEFF']}
-        end={{ x: 1, y: 1 }}
-        start={{ x: 0, y: 0 }}
+        colors={[
+          '#F7FBFF',
+          '#E8F4FF',
+          '#FDFEFF',
+        ]}
+        end={{
+          x: 1,
+          y: 1,
+        }}
+        start={{
+          x: 0,
+          y: 0,
+        }}
         style={StyleSheet.absoluteFill}
       />
-      <Animated.View style={[styles.glow, glowStyle]} />
-      <Animated.View style={[styles.content, contentStyle]}>
+
+      <Animated.View
+        style={[
+          styles.content,
+          contentStyle,
+        ]}
+      >
+        {/* ===================================================== */}
+        {/* RING + CENTER LOGO                                   */}
+        {/* ===================================================== */}
+
         <View style={styles.ringWrap}>
-          <Svg height={RING_SIZE} style={styles.ring} width={RING_SIZE}>
+
+          {/* =================================================== */}
+          {/* ANIMATED THREE-COLOR RING                          */}
+          {/* =================================================== */}
+
+          <Svg
+            height={RING_SIZE}
+            style={styles.ring}
+            width={RING_SIZE}
+          >
             <Circle
               cx={RING_SIZE / 2}
               cy={RING_SIZE / 2}
@@ -107,18 +243,27 @@ export function AnimatedSplash({ onFinished }: { onFinished: () => void }) {
               strokeWidth={RING_STROKE}
             />
           </Svg>
-          <Animated.View style={logoStyle}>
+
+          {/* =================================================== */}
+          {/* CENTER LOGO                                         */}
+          {/* =================================================== */}
+
+          <Animated.View
+            style={logoStyle}
+          >
             <Image
               accessibilityLabel="Vensar"
               contentFit="contain"
-              source={require('../../../assets/vensar-company-logo.png')}
+              source={require('../../../assets/vdrive-center-logo.png')}
               style={styles.logo}
             />
           </Animated.View>
         </View>
-        <Text numberOfLines={1} style={styles.subtitle}>
-          CONSTRUCTIONS COMPANY LIMITED
-        </Text>
+
+        {/* ===================================================== */}
+        {/* V DRIVE BY VENSAR                                    */}
+        {/* ===================================================== */}
+
         <Image
           accessibilityLabel="V Drive by Vensar"
           contentFit="contain"
@@ -131,12 +276,47 @@ export function AnimatedSplash({ onFinished }: { onFinished: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  content: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, width: '100%' },
-  glow: { backgroundColor: '#C9E7FF', borderRadius: 150, height: 300, position: 'absolute', width: 300 },
-  logo: { height: 52, width: 190 },
-  ring: { position: 'absolute' },
-  ringWrap: { alignItems: 'center', height: RING_SIZE, justifyContent: 'center', width: RING_SIZE },
-  screen: { alignItems: 'center', backgroundColor: '#F7FBFF', bottom: 0, justifyContent: 'center', left: 0, position: 'absolute', right: 0, top: 0, zIndex: 9999 },
-  subtitle: { color: '#466B96', fontFamily: 'GoogleSansFlex-Bold', fontSize: 11, letterSpacing: 0.9, lineHeight: 16, paddingTop: 16, textAlign: 'center' },
-  vDriveLogo: { aspectRatio: 1450 / 440, marginTop: 10, maxWidth: '100%', width: 328 },
+  content: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    width: '100%',
+  },
+
+  logo: {
+    height: 152,
+    width: 190,
+  },
+
+  ring: {
+    height: RING_SIZE,
+    position: 'absolute',
+    width: RING_SIZE,
+  },
+
+  ringWrap: {
+    alignItems: 'center',
+    height: RING_SIZE,
+    justifyContent: 'center',
+    width: RING_SIZE,
+  },
+
+  screen: {
+    alignItems: 'center',
+    backgroundColor: '#F7FBFF',
+    bottom: 0,
+    justifyContent: 'center',
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 9999,
+  },
+
+ vDriveLogo: {
+  aspectRatio: 1450 / 440,
+  marginTop: 20,
+  maxWidth: '100%',
+  width: 245,
+},
 });

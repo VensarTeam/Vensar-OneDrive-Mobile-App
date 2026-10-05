@@ -140,3 +140,36 @@ export function deactivateShareLink(linkId: string) {
     { method: 'DELETE' },
   );
 }
+
+export type AccessRequestAction = 'download' | 'share' | 'delete';
+
+export type CreateAccessRequestInput = {
+  action: AccessRequestAction;
+  resourceType?: DriveResourceType | null;
+  resourceId?: string | null;
+  resourceName?: string | null;
+};
+
+export type AccessRequest = {
+  id: string;
+  requesterId: string;
+  requesterName: string;
+  requesterEmail: string;
+  approverId: string;
+  action: AccessRequestAction;
+  resourceType?: string | null;
+  resourceId?: string | null;
+  resourceName?: string | null;
+  status: string;
+  createdAt?: string;
+  resolvedAt?: string | null;
+  resolvedById?: string | null;
+  resolvedByName?: string | null;
+};
+
+export function createAccessRequest(input: CreateAccessRequestInput) {
+  return authenticatedRequest<AccessRequest>('download-requests', {
+    method: 'POST',
+    body: input,
+  });
+}

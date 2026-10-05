@@ -10,6 +10,7 @@ import Pdf from 'react-native-pdf';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAppTheme } from '../../../core/theme';
+import { useAuthSession } from '../../auth/services/auth-session-provider';
 import { fontFamilies } from '../../../core/theme/typography';
 import { BottomSheetShell } from '../../../shared/components/bottom-sheet-shell';
 import { useToast } from '../../../shared/toast/toast-provider';
@@ -24,6 +25,7 @@ import type {
 } from '../models/drive-models';
 import {
   copyResource,
+  createAccessRequest,
   getFolders,
   getResourceShare,
   moveResource,
@@ -37,6 +39,7 @@ export type SelectedResource = { item: DriveFile | DriveFolder; type: DriveResou
 export type PreparedFile = { fileName: string; mimeType: string; uri: string };
 type Mode = 'actions' | 'copy' | 'move' | 'share';
 type QuickAction = 'copy-link' | 'download' | 'external-share';
+type AccessRequestAction = 'download' | 'share' | 'delete';
 
 export function ResourceActionModal(props: {
   accessMode: 'owner' | SharePermission;
@@ -50,8 +53,14 @@ export function ResourceActionModal(props: {
   const { accessMode, initialMode = 'actions', onClose, onCompleted, projectId, resources, serviceId } = props;
   const resource = resources[0];
   const isReadOnly = accessMode === 'viewer';
+  const { user } = useAuthSession();
   const { theme } = useAppTheme();
   const { colors } = theme;
+  const isSelfManaged = Boolean(user?.id && user.managerId === user.id);
+  const canEditResource = accessMode !== 'viewer';
+  const canDownloadResource = isSelfManaged || Boolean(user?.canDownload);
+  const canShareResource = canEditResource && (isSelfManaged || Boolean(user?.canShare));
+  const canDeleteResource = canEditResource && (isSelfManaged || Boolean(user?.canDelete));
   const { showToast } = useToast();
   const [mode, setMode] = useState<Mode>(initialMode);
   const [folders, setFolders] = useState<DriveFolder[]>([]);
@@ -70,6 +79,7 @@ export function ResourceActionModal(props: {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isBusy, setBusy] = useState(false);
   const [activeQuickAction, setActiveQuickAction] = useState<QuickAction>();
+  const [activeRequestAction, setActiveRequestAction] = useState<AccessRequestAction>();
 
   useEffect(() => {
     if (!resource) return;
@@ -81,6 +91,7 @@ export function ResourceActionModal(props: {
     setUsers([]);
     setShare(undefined);
     setActiveQuickAction(undefined);
+    setActiveRequestAction(undefined);
   }, [initialMode, resource]);
 
   useEffect(() => {
@@ -196,6 +207,27 @@ export function ResourceActionModal(props: {
     finally { setActiveQuickAction(undefined); }
   };
 
+  const requestAccess = async (action: AccessRequestAction) => {
+    setActiveRequestAction(action);
+    try {
+      await createAccessRequest({
+        action,
+        resourceId: resource.item.id,
+        resourceName: resource.item.name,
+        resourceType: resource.type,
+      });
+      onClose();
+      showToast({
+        message: `Your ${action} access request has been sent to your manager.`,
+        title: 'Access request sent',
+      });
+    } catch (error) {
+      reportError(error, `Unable to request ${action} access.`);
+    } finally {
+      setActiveRequestAction(undefined);
+    }
+  };
+
   const prepareCurrentFile = async () => {
     if (resource.type !== 'file') return undefined;
     const file = resource.item as DriveFile;
@@ -260,12 +292,15 @@ export function ResourceActionModal(props: {
       {mode === 'actions' ? (
         <ScrollView contentContainerStyle={styles.actions}>
           {isReadOnly ? <View style={[styles.permissionNotice, { backgroundColor: `${colors.primary}0D`, borderColor: `${colors.primary}2B` }]}><View style={[styles.permissionNoticeIcon, { backgroundColor: `${colors.primary}16` }]}><Icon color={colors.primary} size={23} source="shield-lock-outline" /></View><View style={styles.permissionNoticeCopy}><Text style={[styles.permissionNoticeTitle, { color: colors.text }]}>View-only shared access</Text><Text selectable style={[styles.permissionNoticeText, { color: colors.textMuted }]}>You can browse this shared content{resource.type === 'file' ? ' and download this file' : ''}. Copy, Move, Share, and permission changes require edit access.</Text></View></View> : null}
-          {!isReadOnly ? <ActionRow disabled={Boolean(activeQuickAction)} icon="share-variant-outline" label="Share and manage access" onPress={openShare} /> : null}
-          {!isReadOnly ? <ActionRow disabled={Boolean(activeQuickAction)} icon="link-variant" label="Copy link" loading={activeQuickAction === 'copy-link'} onPress={copyLink} /> : null}
-          {!isReadOnly ? <ActionRow disabled={Boolean(activeQuickAction)} icon="content-copy" label="Copy to another folder" onPress={openCopy} /> : null}
-          {!isReadOnly ? <ActionRow disabled={Boolean(activeQuickAction)} icon="folder-move-outline" label="Move to another folder" onPress={openMove} /> : null}
-          {resource.type === 'file' ? <ActionRow disabled={Boolean(activeQuickAction)} icon="export-variant" label="Share to external app" loading={activeQuickAction === 'external-share'} onPress={shareWithApps} /> : null}
-          {resource.type === 'file' ? <ActionRow disabled={Boolean(activeQuickAction)} icon="download-outline" label="Download" loading={activeQuickAction === 'download'} onPress={download} /> : null}
+          {canShareResource ? <ActionRow disabled={Boolean(activeQuickAction)} icon="share-variant-outline" label="Share and manage access" onPress={openShare} /> : null}
+          {canShareResource ? <ActionRow disabled={Boolean(activeQuickAction)} icon="link-variant" label="Copy link" loading={activeQuickAction === 'copy-link'} onPress={copyLink} /> : null}
+          {canEditResource ? <ActionRow disabled={Boolean(activeQuickAction)} icon="content-copy" label="Copy to another folder" onPress={openCopy} /> : null}
+          {canEditResource ? <ActionRow disabled={Boolean(activeQuickAction)} icon="folder-move-outline" label="Move to another folder" onPress={openMove} /> : null}
+          {resource.type === 'file' && canDownloadResource ? <ActionRow disabled={Boolean(activeQuickAction) || Boolean(activeRequestAction)} icon="export-variant" label="Share to external app" loading={activeQuickAction === 'external-share'} onPress={shareWithApps} /> : null}
+          {resource.type === 'file' && canDownloadResource ? <ActionRow disabled={Boolean(activeQuickAction) || Boolean(activeRequestAction)} icon="download-outline" label="Download" loading={activeQuickAction === 'download'} onPress={download} /> : null}
+          {resource.type === 'file' && !canDownloadResource ? <ActionRow disabled={Boolean(activeQuickAction) || Boolean(activeRequestAction)} icon="download-lock-outline" label="Request download access" loading={activeRequestAction === 'download'} onPress={() => requestAccess('download')} /> : null}
+          {canEditResource && !canShareResource ? <ActionRow disabled={Boolean(activeQuickAction) || Boolean(activeRequestAction)} icon="share-lock-outline" label="Request share access" loading={activeRequestAction === 'share'} onPress={() => requestAccess('share')} /> : null}
+          {canEditResource && !canDeleteResource ? <ActionRow disabled={Boolean(activeQuickAction) || Boolean(activeRequestAction)} icon="delete-alert-outline" label="Request delete access" loading={activeRequestAction === 'delete'} onPress={() => requestAccess('delete')} /> : null}
         </ScrollView>
       ) : mode === 'copy' || mode === 'move' ? (
         <View style={styles.flexBody}>

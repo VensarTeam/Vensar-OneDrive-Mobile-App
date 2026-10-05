@@ -13,6 +13,7 @@ export type AuthUser = {
   email: string;
   name: string;
   role: string;
+  managerId: string | null;
   avatar: string | null;
   mobile: string;
   createdBy: string;
@@ -23,6 +24,12 @@ export type AuthUser = {
   isActive: boolean;
   canCreateAdmin: boolean;
   canChangeRole: boolean;
+  canDeleteProjects: boolean;
+  canShare: boolean;
+  canDownload: boolean;
+  canDelete: boolean;
+  canAccessFinance: boolean;
+  canAccessAssets: boolean;
   createdAt: string;
   updatedAt: string;
 };

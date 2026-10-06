@@ -8,6 +8,15 @@ import {
 
 import { useAppTheme } from '../core/theme/AppThemeProvider';
 import { LoginScreen } from '../features/auth/views/LoginScreen';
+import { PrivacyPolicyScreen } from '../features/auth/views/PrivacyPolicyScreen';
+import { PrivacyPolicyDetailScreen } from '../features/auth/views/PrivacyPolicyDetailScreen';
+import {
+  TermsConditionsDetailScreen,
+} from '../features/auth/views/TermsConditionsDetailScreen';
+import {
+  ContactSupportScreen,
+} from '../features/auth/views/ContactSupportScreen';
+import { WelcomeScreen } from '../features/auth/views/WelcomeScreen';
 import { OtpScreen } from '../features/auth/views/OtpScreen';
 import { NotificationsScreen } from '../features/notifications/views/NotificationsScreen';
 import { AccessRequestsScreen } from '../features/access-requests/views/AccessRequestsScreen';
@@ -37,7 +46,7 @@ export function AppNavigator() {
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
-        initialRouteName="Login"
+        initialRouteName="Welcome"
         screenOptions={{
           contentStyle: {
             backgroundColor: theme.colors.background,
@@ -46,6 +55,36 @@ export function AppNavigator() {
           headerBackButtonDisplayMode: 'minimal',
         }}
       >
+        <Stack.Screen
+  name="Welcome"
+  component={WelcomeScreen}
+  options={{ headerShown: false }}
+/>
+
+<Stack.Screen
+  name="PrivacyPolicy"
+  component={PrivacyPolicyScreen}
+  options={{ headerShown: false }}
+/>
+
+<Stack.Screen
+  name="PrivacyPolicyDetail"
+  component={PrivacyPolicyDetailScreen}
+  options={{ headerShown: false }}
+/>
+
+<Stack.Screen
+  name="TermsConditionsDetail"
+  component={TermsConditionsDetailScreen}
+  options={{ headerShown: false }}
+/>
+
+<Stack.Screen
+  name="ContactSupport"
+  component={ContactSupportScreen}
+  options={{ headerShown: false }}
+/>
+
         <Stack.Screen
           name="Login"
           component={LoginScreen}

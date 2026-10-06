@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+
 import {
   ActivityIndicator,
   Alert,
@@ -10,14 +11,29 @@ import {
   Text,
   View,
 } from 'react-native';
-import Constants from 'expo-constants';
-import { Image } from 'expo-image';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
-import { Icon } from 'react-native-paper';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useResponsiveLayout } from '../../../core/responsive';
+import Constants from 'expo-constants';
+
+import { Image } from 'expo-image';
+
+import type {
+  NativeStackNavigationProp,
+} from '@react-navigation/native-stack';
+
+import {
+  useNavigation,
+} from '@react-navigation/native';
+
+import { Icon } from 'react-native-paper';
+
+import {
+  useSafeAreaInsets,
+} from 'react-native-safe-area-context';
+
+import {
+  useResponsiveLayout,
+} from '../../../core/responsive';
+
 import {
   DEFAULT_FOLDER_APPEARANCE,
   getFolderAppearance,
@@ -25,11 +41,30 @@ import {
   type FolderAppearanceSettings,
 } from '../../../core/settings/folderAppearance';
 
-import { useAppTheme } from '../../../core/theme';
-import { fontFamilies } from '../../../core/theme/typography';
-import type { RootStackParamList } from '../../../navigation/routes';
-import type { ProfileDetail } from '../models/profileModel';
-import { useProfileViewModel } from '../viewmodels/useProfileViewModel';
+import {
+  useAppTheme,
+} from '../../../core/theme';
+
+import {
+  fontFamilies,
+} from '../../../core/theme/typography';
+
+import type {
+  RootStackParamList,
+} from '../../../navigation/routes';
+
+import type {
+  ProfileDetail,
+} from '../models/profileModel';
+
+import {
+  useProfileViewModel,
+} from '../viewmodels/useProfileViewModel';
+
+
+/* ========================================================= */
+/* DETAIL ROW */
+/* ========================================================= */
 
 function DetailRow({
   detail,
@@ -46,28 +81,35 @@ function DetailRow({
   const { colors } = theme;
 
   const displayLabel =
-    detail.label === 'Address' ? 'Location' : detail.label;
+    detail.label === 'Address'
+      ? 'Location'
+      : detail.label;
 
-  const isDesignation = displayLabel === 'Designation';
+  const isDesignation =
+    displayLabel === 'Designation';
 
   const shouldStack =
-    !isDesignation && detail.value.length > 34;
+    !isDesignation &&
+    detail.value.length > 34;
 
   return (
     <View
       style={[
         styles.detailRow,
-        isAccount && styles.accountDetailRow,
-        shouldStack && styles.stackedDetailRow,
+        isAccount &&
+          styles.accountDetailRow,
+        shouldStack &&
+          styles.stackedDetailRow,
       ]}
     >
       <View
         style={[
           styles.detailIcon,
           {
-            backgroundColor: isAccount
-              ? `${colors.primary}0D`
-              : colors.surfaceMuted,
+            backgroundColor:
+              isAccount
+                ? `${colors.primary}0D`
+                : colors.surfaceMuted,
           },
         ]}
       >
@@ -81,18 +123,23 @@ function DetailRow({
       <View
         style={[
           styles.detailContent,
-          shouldStack && styles.stackedDetailContent,
-          !isLast && styles.detailDivider,
+          shouldStack &&
+            styles.stackedDetailContent,
+          !isLast &&
+            styles.detailDivider,
           !isLast && {
-            borderBottomColor: colors.border,
+            borderBottomColor:
+              colors.border,
           },
         ]}
       >
         <Text
           style={[
             styles.detailLabel,
-            isAccount && styles.accountDetailLabel,
-            shouldStack && styles.stackedDetailLabel,
+            isAccount &&
+              styles.accountDetailLabel,
+            shouldStack &&
+              styles.stackedDetailLabel,
             {
               color: isAccount
                 ? colors.textMuted
@@ -115,28 +162,50 @@ function DetailRow({
           selectable
           style={[
             styles.detailValue,
-            isAccount && styles.accountDetailValue,
-            isDesignation && styles.designationDetailValue,
-            shouldStack && styles.stackedDetailValue,
+            isAccount &&
+              styles.accountDetailValue,
+            isDesignation &&
+              styles.designationDetailValue,
+            shouldStack &&
+              styles.stackedDetailValue,
             {
               color: isAccount
-                ? detail.valueTone === 'positive'
+                ? detail.valueTone ===
+                  'positive'
                   ? colors.success
                   : colors.text
-                : detail.valueTone === 'positive'
+                : detail.valueTone ===
+                    'positive'
                   ? colors.success
                   : colors.textMuted,
             },
           ]}
         >
           {isDesignation &&
-          detail.value.trim().split(/\s+/).length === 2 ? (
+          detail.value
+            .trim()
+            .split(/\s+/)
+            .length === 2 ? (
             <>
-              <Text style={styles.designationFirstLine}>
-                {detail.value.trim().split(/\s+/)[0]}
+              <Text
+                style={
+                  styles.designationFirstLine
+                }
+              >
+                {
+                  detail.value
+                    .trim()
+                    .split(/\s+/)[0]
+                }
               </Text>
+
               {'\n'}
-              {detail.value.trim().split(/\s+/)[1]}
+
+              {
+                detail.value
+                  .trim()
+                  .split(/\s+/)[1]
+              }
             </>
           ) : (
             detail.value
@@ -147,17 +216,155 @@ function DetailRow({
   );
 }
 
-export function ProfileScreen() {
-  const navigation = useNavigation();
-  const insets = useSafeAreaInsets();
-  const responsive = useResponsiveLayout();
-  const { colorScheme, theme } = useAppTheme();
+
+/* ========================================================= */
+/* PRIVACY / SUPPORT ITEM */
+/* ========================================================= */
+
+function PrivacySupportItem({
+  icon,
+  title,
+  description,
+  actionLabel,
+  onPress,
+  danger = false,
+}: {
+  icon: string;
+  title: string;
+  description: string;
+  actionLabel: string;
+  onPress?: () => void;
+  danger?: boolean;
+}) {
+  const { theme } = useAppTheme();
   const { colors } = theme;
 
-  const [folderAppearance, setFolderAppearance] =
-    useState<FolderAppearanceSettings>(
-      DEFAULT_FOLDER_APPEARANCE,
-    );
+  const accentColor = danger
+    ? colors.danger
+    : colors.primary;
+
+  const iconBackground = danger
+    ? `${colors.danger}10`
+    : `${colors.primary}0D`;
+
+  const actionColor = danger
+    ? colors.danger
+    : colors.primary;
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${title}, ${actionLabel}`}
+      disabled={!onPress}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.privacySupportItem,
+        {
+          backgroundColor: pressed
+            ? `${accentColor}08`
+            : colors.surface,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.privacySupportIcon,
+          {
+            backgroundColor:
+              iconBackground,
+          },
+        ]}
+      >
+        <Icon
+          color={accentColor}
+          size={22}
+          source={icon}
+        />
+      </View>
+
+      <View
+        style={styles.privacySupportContent}
+      >
+        <Text
+          style={[
+            styles.privacySupportTitle,
+            {
+              color: colors.text,
+            },
+          ]}
+        >
+          {title}
+        </Text>
+
+        <Text
+          style={[
+            styles.privacySupportDescription,
+            {
+              color: colors.textMuted,
+            },
+          ]}
+        >
+          {description}
+        </Text>
+      </View>
+
+      <View
+        style={styles.privacySupportAction}
+      >
+        <Text
+          style={[
+            styles.privacySupportActionText,
+            {
+              color: actionColor,
+            },
+          ]}
+        >
+          {actionLabel}
+        </Text>
+
+        <Icon
+          color={actionColor}
+          size={22}
+          source="chevron-right"
+        />
+      </View>
+    </Pressable>
+  );
+}
+
+
+/* ========================================================= */
+/* SCREEN */
+/* ========================================================= */
+
+export function ProfileScreen() {
+  const navigation =
+    useNavigation();
+
+  const insets =
+    useSafeAreaInsets();
+
+  const responsive =
+    useResponsiveLayout();
+
+  const {
+    colorScheme,
+    theme,
+  } = useAppTheme();
+
+  const { colors } = theme;
+
+
+  /* ======================================================= */
+  /* FOLDER APPEARANCE */
+  /* ======================================================= */
+
+  const [
+    folderAppearance,
+    setFolderAppearance,
+  ] = useState<FolderAppearanceSettings>(
+    DEFAULT_FOLDER_APPEARANCE,
+  );
 
   const [
     isFolderAppearanceModalVisible,
@@ -165,24 +372,53 @@ export function ProfileScreen() {
   ] = useState(false);
 
   useEffect(() => {
-    void getFolderAppearance().then(setFolderAppearance);
+    void getFolderAppearance()
+      .then(setFolderAppearance);
   }, []);
 
+
+  /* ======================================================= */
+  /* APP VERSION */
+  /* ======================================================= */
+
   const appVersion =
-    Constants.expoConfig?.version ?? '1.0.0';
+    Constants.expoConfig?.version ??
+    '1.0.0';
 
-  const handleSignedOut = useCallback(() => {
-    navigation
-      .getParent<
-        NativeStackNavigationProp<RootStackParamList>
-      >()
-      ?.reset({
+
+  /* ======================================================= */
+  /* ROOT NAVIGATION */
+  /* ======================================================= */
+
+  const rootNavigation =
+    navigation.getParent<
+      NativeStackNavigationProp<
+        RootStackParamList
+      >
+    >();
+
+
+  /* ======================================================= */
+  /* SIGN OUT */
+  /* ======================================================= */
+
+  const handleSignedOut =
+    useCallback(() => {
+      rootNavigation?.reset({
         index: 0,
-        routes: [{ name: 'Login' }],
+        routes: [
+          {
+            name: 'Login',
+          },
+        ],
       });
-  }, [navigation]);
+    }, [rootNavigation]);
 
-  const vm = useProfileViewModel(handleSignedOut);
+  const vm =
+    useProfileViewModel(
+      handleSignedOut,
+    );
+
 
   const confirmSignOut = () => {
     Alert.alert(
@@ -202,712 +438,1322 @@ export function ProfileScreen() {
     );
   };
 
+
+  /* ======================================================= */
+  /* ACCESS REQUESTS */
+  /* ======================================================= */
+
   const openAccessRequests = () => {
-    navigation
-      .getParent<NativeStackNavigationProp<RootStackParamList>>()
-      ?.navigate('AccessRequests');
+    rootNavigation?.navigate(
+      'AccessRequests',
+    );
   };
 
+
+  /* ======================================================= */
+  /* PRIVACY & SUPPORT */
+  /* ======================================================= */
+
+  const openPrivacyPolicy = () => {
+    rootNavigation?.navigate(
+      'PrivacyPolicyDetail',
+      {
+        fromProfile: true,
+      },
+    );
+  };
+
+
+  const openTerms = () => {
+    rootNavigation?.navigate(
+      'TermsConditionsDetail',
+      {
+        fromProfile: true,
+      },
+    );
+  };
+
+
+  const openSupport = () => {
+    rootNavigation?.navigate(
+      'ContactSupport',
+    );
+  };
+
+
+  /* ======================================================= */
+  /* DELETE ACCOUNT */
+  /* ======================================================= */
+
+  const requestAccountDeletion = () => {
+  openSupport();
+};
+
+
+  /* ======================================================= */
+  /* RENDER */
+  /* ======================================================= */
+
   return (
-    <><ScrollView
-      contentContainerStyle={[
-        styles.scrollContent,
-        {
-          paddingBottom: insets.bottom + 30,
-          paddingHorizontal: responsive.horizontalPadding,
-          paddingTop: (responsive.isCompact ? 8 : 16) +
-            (process.env.EXPO_OS === 'android'
-              ? insets.top
-              : 0),
-        },
-      ]}
-      contentInsetAdjustmentBehavior="automatic"
-      showsVerticalScrollIndicator={false}
-      style={[
-        styles.screen,
-        {
-          backgroundColor: colors.background,
-        },
-      ]}
-    >
-      <View
-        style={[
-          styles.content,
+    <>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
           {
-            maxWidth: responsive.maxContentWidth,
+            paddingBottom:
+              insets.bottom + 30,
+
+            paddingHorizontal:
+              responsive.horizontalPadding,
+
+            paddingTop:
+              (responsive.isCompact
+                ? 8
+                : 16) +
+              (process.env.EXPO_OS ===
+                'android'
+                ? insets.top
+                : 0),
+          },
+        ]}
+        contentInsetAdjustmentBehavior="automatic"
+        showsVerticalScrollIndicator={false}
+        style={[
+          styles.screen,
+          {
+            backgroundColor:
+              colors.background,
           },
         ]}
       >
-        <View style={styles.topBar}>
-          <Text
-            accessibilityRole="header"
-            style={[
-              styles.pageTitle,
-              { color: colors.text },
-            ]}
-          >
-            Account
-          </Text>
-
-          {/* V DRIVE LOGO */}
-          {/* No dark-mode box/background/border/shadow */}
-          <View style={styles.brandLogoSurface}>
-            <Image
-              accessibilityLabel="V Drive by Vensar"
-              contentFit="contain"
-              source={colorScheme === 'dark'
-                ? require('../../../../assets/onedrive-vensar-dark.png')
-                : require('../../../../assets/onedrive-vensar-light.png')}
-              style={styles.brandLogo} />
-          </View>
-        </View>
-
         <View
           style={[
-            styles.profileCard,
+            styles.content,
             {
-              backgroundColor: colors.surface,
-              borderColor: `${colors.primary}22`,
-              boxShadow: colorScheme === 'dark'
-                ? '0 10px 28px rgba(0, 0, 0, 0.24)'
-                : '0 10px 28px rgba(29, 78, 121, 0.08)',
+              maxWidth:
+                responsive.maxContentWidth,
             },
           ]}
         >
-          <View
-            style={[
-              styles.profileGlow,
-              {
-                backgroundColor: `${colors.primary}14`,
-              },
-            ]} />
 
-          <View
-            style={[
-              styles.profileGlowSmall,
-              {
-                backgroundColor: `${colors.primary}0A`,
-              },
-            ]} />
+          {/* ================================================= */}
+          {/* TOP BAR */}
+          {/* ================================================= */}
 
-          <View style={styles.profileIdentityRow}>
-            <View
+          <View style={styles.topBar}>
+
+            <Text
+              accessibilityRole="header"
               style={[
-                styles.avatarRing,
+                styles.pageTitle,
                 {
-                  borderColor: `${colors.primary}35`,
-                  backgroundColor: `${colors.primary}0D`,
+                  color:
+                    colors.text,
                 },
               ]}
             >
-              <View
-                style={[
-                  styles.avatar,
-                  {
-                    backgroundColor: colors.primary,
-                  },
-                ]}
-              >
-                {vm.profile.avatar ? (
-                  <Image
-                    accessibilityLabel={`${vm.profile.displayName} profile photo`}
-                    source={vm.profile.avatar}
-                    style={styles.avatarImage} />
-                ) : (
-                  <Text
-                    style={[
-                      styles.avatarText,
-                      {
-                        color: colors.onPrimary,
-                      },
-                    ]}
-                  >
-                    {vm.profile.initials}
-                  </Text>
-                )}
-              </View>
+              Account
+            </Text>
+
+            <View
+              style={
+                styles.brandLogoSurface
+              }
+            >
+              <Image
+                accessibilityLabel="V Drive by Vensar"
+                contentFit="contain"
+                source={
+                  colorScheme ===
+                  'dark'
+                    ? require('../../../../assets/onedrive-vensar-dark.png')
+                    : require('../../../../assets/onedrive-vensar-light.png')
+                }
+                style={
+                  styles.brandLogo
+                }
+              />
             </View>
 
-            <View style={styles.identity}>
-              <Text
-                ellipsizeMode="tail"
-                numberOfLines={2}
-                selectable
-                style={[
-                  styles.name,
-                  { color: colors.text },
-                ]}
-              >
-                {vm.profile.displayName}
-              </Text>
+          </View>
 
-              <Text
-                ellipsizeMode="middle"
-                numberOfLines={1}
-                selectable
-                style={[
-                  styles.email,
-                  { color: colors.textMuted },
-                ]}
-              >
-                {vm.profile.email}
-              </Text>
+
+          {/* ================================================= */}
+          {/* PROFILE CARD */}
+          {/* ================================================= */}
+
+          <View
+            style={[
+              styles.profileCard,
+              {
+                backgroundColor:
+                  colors.surface,
+
+                borderColor:
+                  `${colors.primary}22`,
+
+                boxShadow:
+                  colorScheme ===
+                  'dark'
+                    ? '0 10px 28px rgba(0, 0, 0, 0.24)'
+                    : '0 10px 28px rgba(29, 78, 121, 0.08)',
+              },
+            ]}
+          >
+
+            <View
+              style={[
+                styles.profileGlow,
+                {
+                  backgroundColor:
+                    `${colors.primary}14`,
+                },
+              ]}
+            />
+
+            <View
+              style={[
+                styles.profileGlowSmall,
+                {
+                  backgroundColor:
+                    `${colors.primary}0A`,
+                },
+              ]}
+            />
+
+            <View
+              style={
+                styles.profileIdentityRow
+              }
+            >
 
               <View
                 style={[
-                  styles.accountBadge,
+                  styles.avatarRing,
                   {
-                    backgroundColor: `${colors.primary}10`,
-                    borderColor: `${colors.primary}20`,
+                    borderColor:
+                      `${colors.primary}35`,
+
+                    backgroundColor:
+                      `${colors.primary}0D`,
                   },
                 ]}
               >
-                <Icon
-                  color={colors.primary}
-                  size={13}
-                  source="briefcase-outline" />
+
+                <View
+                  style={[
+                    styles.avatar,
+                    {
+                      backgroundColor:
+                        colors.primary,
+                    },
+                  ]}
+                >
+
+                  {vm.profile.avatar ? (
+                    <Image
+                      accessibilityLabel={`${vm.profile.displayName} profile photo`}
+                      source={
+                        vm.profile.avatar
+                      }
+                      style={
+                        styles.avatarImage
+                      }
+                    />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.avatarText,
+                        {
+                          color:
+                            colors.onPrimary,
+                        },
+                      ]}
+                    >
+                      {
+                        vm.profile
+                          .initials
+                      }
+                    </Text>
+                  )}
+
+                </View>
+
+              </View>
+
+
+              <View
+                style={styles.identity}
+              >
 
                 <Text
                   ellipsizeMode="tail"
-                  numberOfLines={1}
+                  numberOfLines={2}
+                  selectable
                   style={[
-                    styles.accountBadgeText,
-                    { color: colors.primary },
+                    styles.name,
+                    {
+                      color:
+                        colors.text,
+                    },
                   ]}
                 >
-                  {vm.profile.role}
+                  {
+                    vm.profile
+                      .displayName
+                  }
                 </Text>
-              </View>
-            </View>
-          </View>
 
-          <View
-            style={[
-              styles.profileSecurityRow,
-              {
-                backgroundColor: colorScheme === 'dark'
-                  ? `${colors.primary}0A`
-                  : `${colors.primary}08`,
-                borderTopColor: `${colors.primary}16`,
-              },
-            ]}
-          >
+                <Text
+                  ellipsizeMode="middle"
+                  numberOfLines={1}
+                  selectable
+                  style={[
+                    styles.email,
+                    {
+                      color:
+                        colors.textMuted,
+                    },
+                  ]}
+                >
+                  {
+                    vm.profile.email
+                  }
+                </Text>
+
+                <View
+                  style={[
+                    styles.accountBadge,
+                    {
+                      backgroundColor:
+                        `${colors.primary}10`,
+
+                      borderColor:
+                        `${colors.primary}20`,
+                    },
+                  ]}
+                >
+
+                  <Icon
+                    color={
+                      colors.primary
+                    }
+                    size={13}
+                    source="briefcase-outline"
+                  />
+
+                  <Text
+                    ellipsizeMode="tail"
+                    numberOfLines={1}
+                    style={[
+                      styles.accountBadgeText,
+                      {
+                        color:
+                          colors.primary,
+                      },
+                    ]}
+                  >
+                    {
+                      vm.profile.role
+                    }
+                  </Text>
+
+                </View>
+
+              </View>
+
+            </View>
+
+
             <View
               style={[
-                styles.securityIcon,
+                styles.profileSecurityRow,
                 {
-                  backgroundColor: `${colors.primary}12`,
+                  backgroundColor:
+                    colorScheme ===
+                    'dark'
+                      ? `${colors.primary}0A`
+                      : `${colors.primary}08`,
+
+                  borderTopColor:
+                    `${colors.primary}16`,
                 },
               ]}
             >
-              <Icon
-                color={colors.primary}
-                size={15}
-                source="shield-check-outline" />
-            </View>
 
-            <Text
-              style={[
-                styles.readOnlyText,
-                { color: colors.textMuted },
-              ]}
-            >
-              Managed securely by Vensar
-            </Text>
+              <View
+                style={[
+                  styles.securityIcon,
+                  {
+                    backgroundColor:
+                      `${colors.primary}12`,
+                  },
+                ]}
+              >
+                <Icon
+                  color={
+                    colors.primary
+                  }
+                  size={15}
+                  source="shield-check-outline"
+                />
+              </View>
 
-            <Icon
-              color={colors.primary}
-              size={16}
-              source="check-circle-outline" />
-          </View>
-        </View>
-
-        {vm.sections.map((section) => {
-          const sectionKey = section.title.trim().toLowerCase();
-
-          const isAccountSection = sectionKey === 'account';
-
-          const isSecuritySection = sectionKey.includes('security') ||
-            sectionKey.includes('access');
-
-          return (
-            <View
-              key={section.title}
-              style={styles.section}
-            >
               <Text
                 style={[
-                  styles.sectionTitle,
-                  { color: colors.textMuted },
+                  styles.readOnlyText,
+                  {
+                    color:
+                      colors.textMuted,
+                  },
                 ]}
               >
-                {section.title}
+                Managed securely by Vensar
               </Text>
 
-              <View
-                style={[
-                  styles.sectionCard,
-                  isAccountSection &&
-                  styles.accountSectionCard,
-                  isSecuritySection &&
-                  styles.securitySectionCard,
-                  {
-                    boxShadow: isAccountSection
-                      ? colorScheme === 'dark'
-                        ? '0 7px 20px rgba(0, 0, 0, 0.20)'
-                        : '0 7px 20px rgba(29, 78, 121, 0.055)'
-                      : isSecuritySection
-                        ? colorScheme === 'dark'
-                          ? '0 7px 20px rgba(0, 0, 0, 0.18)'
-                          : '0 7px 20px rgba(29, 78, 121, 0.045)'
-                        : undefined,
-                    borderColor: isSecuritySection
-                      ? `${colors.primary}20`
-                      : colors.border,
-                    backgroundColor: isSecuritySection
-                      ? `${colors.primary}04`
-                      : colors.surface,
-                  },
-                ]}
-              >
-                {section.details.map(
-                  (detail, index) => (
-                    <DetailRow
-                      detail={detail}
-                      isAccount={section.title
-                        .trim()
-                        .toLowerCase() ===
-                        'account'}
-                      isSecurity={isSecuritySection}
-                      isLast={index ===
-                        section.details.length - 1}
-                      key={detail.label} />
-                  )
-                )}
-              </View>
-            </View>
-          );
-        })}
-
-        {/* ACCESS REQUESTS */}
-        <View style={styles.section}>
-          <Text
-            style={[
-              styles.sectionTitle,
-              { color: colors.textMuted },
-            ]}
-          >
-            Access
-          </Text>
-
-          <View
-            style={[
-              styles.sectionCard,
-              styles.accessRequestsCard,
-              {
-                backgroundColor: `${colors.primary}04`,
-                borderColor: `${colors.primary}18`,
-                boxShadow: colorScheme === 'dark'
-                  ? '0 7px 20px rgba(0, 0, 0, 0.18)'
-                  : '0 7px 20px rgba(29, 78, 121, 0.045)',
-              },
-            ]}
-          >
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Open access requests"
-              onPress={openAccessRequests}
-              style={({ pressed }) => [
-                styles.accessRequestsButton,
-                {
-                  backgroundColor: pressed
-                    ? `${colors.primary}0C`
-                    : 'transparent',
-                },
-              ]}
-            >
-              <View
-                style={[
-                  styles.detailIcon,
-                  {
-                    backgroundColor: `${colors.primary}0D`,
-                  },
-                ]}
-              >
-                <Icon
-                  color={colors.primary}
-                  size={20}
-                  source="lock-open-outline" />
-              </View>
-
-              <View
-                style={styles.accessRequestsContent}
-              >
-                <Text
-                  style={[
-                    styles.accessRequestsTitle,
-                    { color: colors.text },
-                  ]}
-                >
-                  Access Requests
-                </Text>
-
-                <Text
-                  style={[
-                    styles.accessRequestsSubtitle,
-                    { color: colors.textMuted },
-                  ]}
-                >
-                  View requests you've sent
-                </Text>
-              </View>
-
               <Icon
-                color={colors.textMuted}
-                size={22}
-                source="chevron-right" />
-            </Pressable>
+                color={
+                  colors.primary
+                }
+                size={16}
+                source="check-circle-outline"
+              />
+
+            </View>
+
           </View>
-        </View>
 
-        {/* APPEARANCE */}
-        <View style={styles.section}>
-          <Text
-            style={[
-              styles.sectionTitle,
-              { color: colors.textMuted },
-            ]}
-          >
-            Appearance
-          </Text>
 
-          <View
-            style={[
-              styles.sectionCard,
-              styles.appearanceSectionCard,
-              {
-                backgroundColor: `${colors.primary}04`,
-                borderColor: `${colors.primary}18`,
-                boxShadow: colorScheme === 'dark'
-                  ? '0 7px 20px rgba(0, 0, 0, 0.18)'
-                  : '0 7px 20px rgba(29, 78, 121, 0.045)',
-              },
-            ]}
-          >
-            <View style={styles.appearanceRow}>
-              <View
-                style={[
-                  styles.detailIcon,
-                  {
-                    backgroundColor: `${colors.primary}0D`,
-                  },
-                ]}
-              >
-                <Icon
-                  color={colors.primary}
-                  size={20}
-                  source={vm.isDarkMode
-                    ? 'weather-night'
-                    : 'white-balance-sunny'} />
-              </View>
+          {/* ================================================= */}
+          {/* PROFILE SECTIONS */}
+          {/* ================================================= */}
 
-              <View style={styles.appearanceContent}>
-                <Text
-                  style={[
-                    styles.detailLabel,
-                    { color: colors.text },
-                  ]}
+          {vm.sections.map(
+            (section) => {
+              const sectionKey =
+                section.title
+                  .trim()
+                  .toLowerCase();
+
+              const isAccountSection =
+                sectionKey ===
+                'account';
+
+              const isSecuritySection =
+                sectionKey.includes(
+                  'security',
+                ) ||
+                sectionKey.includes(
+                  'access',
+                );
+
+              return (
+                <View
+                  key={
+                    section.title
+                  }
+                  style={
+                    styles.section
+                  }
                 >
-                  Dark mode
-                </Text>
 
-                <View style={styles.switchContainer}>
-                  <Switch
-                    accessibilityLabel="Dark mode"
-                    onValueChange={vm.setDarkMode}
-                    thumbColor={colors.onPrimary}
-                    trackColor={{
-                      false: colors.border,
-                      true: colors.primary,
-                    }}
-                    value={vm.isDarkMode} />
+                  <Text
+                    style={[
+                      styles.sectionTitle,
+                      {
+                        color:
+                          colors.textMuted,
+                      },
+                    ]}
+                  >
+                    {
+                      section.title
+                    }
+                  </Text>
+
+                  <View
+                    style={[
+                      styles.sectionCard,
+                      isAccountSection &&
+                        styles.accountSectionCard,
+                      isSecuritySection &&
+                        styles.securitySectionCard,
+                      {
+                        boxShadow:
+                          isAccountSection
+                            ? colorScheme ===
+                              'dark'
+                              ? '0 7px 20px rgba(0, 0, 0, 0.20)'
+                              : '0 7px 20px rgba(29, 78, 121, 0.055)'
+                            : isSecuritySection
+                              ? colorScheme ===
+                                'dark'
+                                ? '0 7px 20px rgba(0, 0, 0, 0.18)'
+                                : '0 7px 20px rgba(29, 78, 121, 0.045)'
+                              : undefined,
+
+                        borderColor:
+                          isSecuritySection
+                            ? `${colors.primary}20`
+                            : colors.border,
+
+                        backgroundColor:
+                          isSecuritySection
+                            ? `${colors.primary}04`
+                            : colors.surface,
+                      },
+                    ]}
+                  >
+
+                    {section.details.map(
+                      (
+                        detail,
+                        index,
+                      ) => (
+                        <DetailRow
+                          detail={
+                            detail
+                          }
+                          isAccount={
+                            section.title
+                              .trim()
+                              .toLowerCase() ===
+                            'account'
+                          }
+                          isSecurity={
+                            isSecuritySection
+                          }
+                          isLast={
+                            index ===
+                            section
+                              .details
+                              .length -
+                              1
+                          }
+                          key={
+                            detail.label
+                          }
+                        />
+                      ),
+                    )}
+
+                  </View>
+
                 </View>
-              </View>
-            </View>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Folder Appearance"
-              onPress={() => {
-                setFolderAppearanceModalVisible(true);
-              } }
-              style={({ pressed }) => [
-                styles.appearanceRow,
-                {
-                  backgroundColor: pressed
-                    ? `${colors.primary}08`
-                    : 'transparent',
-                },
-              ]}
-            >
-              <View
-                style={[
-                  styles.detailIcon,
-                  {
-                    backgroundColor: `${colors.primary}0D`,
-                  },
-                ]}
-              >
-                <Icon
-                  color={colors.primary}
-                  size={20}
-                  source="folder-outline" />
-              </View>
-
-              <View style={styles.appearanceContent}>
-                <Text
-                  style={[
-                    styles.detailLabel,
-                    { color: colors.text },
-                  ]}
-                >
-                  Folder Appearance
-                </Text>
-
-                <Text
-                  style={[
-                    styles.folderAppearanceValue,
-                    { color: colors.textMuted },
-                  ]}
-                >
-                  {folderAppearance.mode === 'service'
-                    ? 'Service Colors'
-                    : 'Monochrome'}
-                </Text>
-              </View>
-            </Pressable>
-          </View>
-        </View>
-
-        <View
-          style={[
-            styles.signOutSection,
-            {
-              backgroundColor: `${colors.danger}04`,
-              borderColor: `${colors.danger}18`,
-              boxShadow: colorScheme === 'dark'
-                ? '0 7px 20px rgba(0, 0, 0, 0.16)'
-                : '0 7px 20px rgba(180, 45, 45, 0.035)',
+              );
             },
-          ]}
-        >
-          <Pressable
-            accessibilityRole="button"
-            disabled={vm.isSigningOut}
-            onPress={confirmSignOut}
-            style={({ pressed }) => [
-              styles.signOutButton,
-              {
-                backgroundColor: pressed
-                  ? `${colors.danger}0C`
-                  : 'transparent',
-                opacity: vm.isSigningOut
-                  ? 0.65
-                  : 1,
-              },
-            ]}
+          )}
+
+
+          {/* ================================================= */}
+          {/* ACCESS REQUESTS */}
+          {/* ================================================= */}
+
+          <View
+            style={styles.section}
           >
-            {vm.isSigningOut ? (
-              <ActivityIndicator
-                color={colors.danger}
-                size="small" />
-            ) : (
-              <Icon
-                color={colors.danger}
-                size={20}
-                source="logout" />
-            )}
 
             <Text
               style={[
-                styles.signOutText,
-                { color: colors.danger },
+                styles.sectionTitle,
+                {
+                  color:
+                    colors.textMuted,
+                },
               ]}
             >
-              Sign out
+              Access
             </Text>
-          </Pressable>
-        </View>
 
-        <View style={styles.footer}>
-          <Text
+            <View
+              style={[
+                styles.sectionCard,
+                styles.accessRequestsCard,
+                {
+                  backgroundColor:
+                    `${colors.primary}04`,
+
+                  borderColor:
+                    `${colors.primary}18`,
+
+                  boxShadow:
+                    colorScheme ===
+                    'dark'
+                      ? '0 7px 20px rgba(0, 0, 0, 0.18)'
+                      : '0 7px 20px rgba(29, 78, 121, 0.045)',
+                },
+              ]}
+            >
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Open access requests"
+                onPress={
+                  openAccessRequests
+                }
+                style={({
+                  pressed,
+                }) => [
+                  styles.accessRequestsButton,
+                  {
+                    backgroundColor:
+                      pressed
+                        ? `${colors.primary}0C`
+                        : 'transparent',
+                  },
+                ]}
+              >
+
+                <View
+                  style={[
+                    styles.detailIcon,
+                    {
+                      backgroundColor:
+                        `${colors.primary}0D`,
+                    },
+                  ]}
+                >
+                  <Icon
+                    color={
+                      colors.primary
+                    }
+                    size={20}
+                    source="lock-open-outline"
+                  />
+                </View>
+
+                <View
+                  style={
+                    styles.accessRequestsContent
+                  }
+                >
+
+                  <Text
+                    style={[
+                      styles.accessRequestsTitle,
+                      {
+                        color:
+                          colors.text,
+                      },
+                    ]}
+                  >
+                    Access Requests
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.accessRequestsSubtitle,
+                      {
+                        color:
+                          colors.textMuted,
+                      },
+                    ]}
+                  >
+                    View requests you've sent
+                  </Text>
+
+                </View>
+
+                <Icon
+                  color={
+                    colors.textMuted
+                  }
+                  size={22}
+                  source="chevron-right"
+                />
+
+              </Pressable>
+
+            </View>
+
+          </View>
+
+
+          {/* ================================================= */}
+          {/* APPEARANCE */}
+          {/* ================================================= */}
+
+          <View
+            style={styles.section}
+          >
+
+            <Text
+              style={[
+                styles.sectionTitle,
+                {
+                  color:
+                    colors.textMuted,
+                },
+              ]}
+            >
+              Appearance
+            </Text>
+
+            <View
+              style={[
+                styles.sectionCard,
+                styles.appearanceSectionCard,
+                {
+                  backgroundColor:
+                    `${colors.primary}04`,
+
+                  borderColor:
+                    `${colors.primary}18`,
+
+                  boxShadow:
+                    colorScheme ===
+                    'dark'
+                      ? '0 7px 20px rgba(0, 0, 0, 0.18)'
+                      : '0 7px 20px rgba(29, 78, 121, 0.045)',
+                },
+              ]}
+            >
+
+              <View
+                style={
+                  styles.appearanceRow
+                }
+              >
+
+                <View
+                  style={[
+                    styles.detailIcon,
+                    {
+                      backgroundColor:
+                        `${colors.primary}0D`,
+                    },
+                  ]}
+                >
+                  <Icon
+                    color={
+                      colors.primary
+                    }
+                    size={20}
+                    source={
+                      vm.isDarkMode
+                        ? 'weather-night'
+                        : 'white-balance-sunny'
+                    }
+                  />
+                </View>
+
+                <View
+                  style={
+                    styles.appearanceContent
+                  }
+                >
+
+                  <Text
+                    style={[
+                      styles.detailLabel,
+                      {
+                        color:
+                          colors.text,
+                      },
+                    ]}
+                  >
+                    Dark mode
+                  </Text>
+
+                  <View
+                    style={
+                      styles.switchContainer
+                    }
+                  >
+
+                    <Switch
+                      accessibilityLabel="Dark mode"
+                      onValueChange={
+                        vm.setDarkMode
+                      }
+                      thumbColor={
+                        colors.onPrimary
+                      }
+                      trackColor={{
+                        false:
+                          colors.border,
+                        true:
+                          colors.primary,
+                      }}
+                      value={
+                        vm.isDarkMode
+                      }
+                    />
+
+                  </View>
+
+                </View>
+
+              </View>
+
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Folder Appearance"
+                onPress={() => {
+                  setFolderAppearanceModalVisible(
+                    true,
+                  );
+                }}
+                style={({
+                  pressed,
+                }) => [
+                  styles.appearanceRow,
+                  {
+                    backgroundColor:
+                      pressed
+                        ? `${colors.primary}08`
+                        : 'transparent',
+                  },
+                ]}
+              >
+
+                <View
+                  style={[
+                    styles.detailIcon,
+                    {
+                      backgroundColor:
+                        `${colors.primary}0D`,
+                    },
+                  ]}
+                >
+                  <Icon
+                    color={
+                      colors.primary
+                    }
+                    size={20}
+                    source="folder-outline"
+                  />
+                </View>
+
+                <View
+                  style={
+                    styles.appearanceContent
+                  }
+                >
+
+                  <Text
+                    style={[
+                      styles.detailLabel,
+                      {
+                        color:
+                          colors.text,
+                      },
+                    ]}
+                  >
+                    Folder Appearance
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.folderAppearanceValue,
+                      {
+                        color:
+                          colors.textMuted,
+                      },
+                    ]}
+                  >
+                    {
+                      folderAppearance.mode ===
+                      'service'
+                        ? 'Service Colors'
+                        : 'Monochrome'
+                    }
+                  </Text>
+
+                </View>
+
+              </Pressable>
+
+            </View>
+
+          </View>
+
+
+          {/* ================================================= */}
+          {/* PRIVACY & SUPPORT */}
+          {/* ================================================= */}
+
+          <View
+            style={styles.section}
+          >
+
+            <Text
+              style={[
+                styles.sectionTitle,
+                {
+                  color:
+                    colors.textMuted,
+                },
+              ]}
+            >
+              Privacy & Support
+            </Text>
+
+            <View
+              style={[
+                styles.privacySupportCard,
+                {
+                  backgroundColor:
+                    colors.surface,
+
+                  borderColor:
+                    colors.border,
+
+                  boxShadow:
+                    colorScheme ===
+                    'dark'
+                      ? '0 7px 20px rgba(0, 0, 0, 0.18)'
+                      : '0 7px 20px rgba(29, 78, 121, 0.045)',
+                },
+              ]}
+            >
+
+              {/* DELETE ACCOUNT — MOVED TO TOP */}
+
+              <PrivacySupportItem
+                icon="account-remove-outline"
+                title="Delete My Account"
+                description="Request deletion of your V Drive account and associated data."
+                actionLabel="Request"
+                onPress={
+                  requestAccountDeletion
+                }
+                danger
+              />
+
+              <PrivacySupportItem
+                icon="shield-outline"
+                title="Privacy Policy"
+                description="Review how Vensar handles your personal data."
+                actionLabel="View"
+                onPress={
+                  openPrivacyPolicy
+                }
+              />
+
+              <PrivacySupportItem
+                icon="book-open-outline"
+                title="Terms & Conditions"
+                description="Review the terms that apply to using V Drive."
+                actionLabel="View"
+                onPress={
+                  openTerms
+                }
+              />
+
+              <PrivacySupportItem
+                icon="headset"
+                title="Contact Support"
+                description="Get help with your account or app access."
+                actionLabel="Contact"
+                onPress={
+                  openSupport
+                }
+              />
+
+            </View>
+
+          </View>
+
+
+          {/* ================================================= */}
+          {/* SIGN OUT */}
+          {/* ================================================= */}
+
+          <View
             style={[
-              styles.versionText,
-              { color: colors.primary },
+              styles.signOutSection,
+              {
+                backgroundColor:
+                  `${colors.danger}04`,
+
+                borderColor:
+                  `${colors.danger}18`,
+
+                boxShadow:
+                  colorScheme ===
+                  'dark'
+                    ? '0 7px 20px rgba(0, 0, 0, 0.16)'
+                    : '0 7px 20px rgba(180, 45, 45, 0.035)',
+              },
             ]}
           >
-            App Version {appVersion}
-          </Text>
+
+            <Pressable
+              accessibilityRole="button"
+              disabled={
+                vm.isSigningOut
+              }
+              onPress={
+                confirmSignOut
+              }
+              style={({
+                pressed,
+              }) => [
+                styles.signOutButton,
+                {
+                  backgroundColor:
+                    pressed
+                      ? `${colors.danger}0C`
+                      : 'transparent',
+
+                  opacity:
+                    vm.isSigningOut
+                      ? 0.65
+                      : 1,
+                },
+              ]}
+            >
+
+              {vm.isSigningOut ? (
+                <ActivityIndicator
+                  color={
+                    colors.danger
+                  }
+                  size="small"
+                />
+              ) : (
+                <Icon
+                  color={
+                    colors.danger
+                  }
+                  size={20}
+                  source="logout"
+                />
+              )}
+
+              <Text
+                style={[
+                  styles.signOutText,
+                  {
+                    color:
+                      colors.danger,
+                  },
+                ]}
+              >
+                Sign out
+              </Text>
+
+            </Pressable>
+
+          </View>
+
+
+          {/* ================================================= */}
+          {/* FOOTER */}
+          {/* ================================================= */}
+
+          <View
+            style={
+              styles.footer
+            }
+          >
+
+            <Text
+              style={[
+                styles.versionText,
+                {
+                  color:
+                    colors.primary,
+                },
+              ]}
+            >
+              App Version {appVersion}
+            </Text>
+
+          </View>
+
         </View>
-      </View>
-    </ScrollView><Modal
-      animationType="fade"
-      transparent
-      visible={isFolderAppearanceModalVisible}
-      onRequestClose={() => {
-        setFolderAppearanceModalVisible(false);
-      } }
-    >
+      </ScrollView>
+
+
+      {/* ===================================================== */}
+      {/* FOLDER APPEARANCE MODAL */}
+      {/* ===================================================== */}
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={
+          isFolderAppearanceModalVisible
+        }
+        onRequestClose={() => {
+          setFolderAppearanceModalVisible(
+            false,
+          );
+        }}
+      >
+
         <Pressable
-          style={styles.folderAppearanceModalOverlay}
+          style={
+            styles.folderAppearanceModalOverlay
+          }
           onPress={() => {
-            setFolderAppearanceModalVisible(false);
-          } }
+            setFolderAppearanceModalVisible(
+              false,
+            );
+          }}
         >
+
           <Pressable
-            onPress={(event) => event.stopPropagation()}
+            onPress={(event) =>
+              event.stopPropagation()
+            }
             style={[
               styles.folderAppearanceModalCard,
               {
-                backgroundColor: colors.surface,
-                borderColor: `${colors.primary}20`,
-                boxShadow: colorScheme === 'dark'
-                  ? '0 12px 34px rgba(0, 0, 0, 0.35)'
-                  : '0 12px 34px rgba(29, 78, 121, 0.14)',
+                backgroundColor:
+                  colors.surface,
+
+                borderColor:
+                  `${colors.primary}20`,
+
+                boxShadow:
+                  colorScheme ===
+                  'dark'
+                    ? '0 12px 34px rgba(0, 0, 0, 0.35)'
+                    : '0 12px 34px rgba(29, 78, 121, 0.14)',
               },
             ]}
           >
-            <View style={styles.folderAppearanceModalHeader}>
+
+            <View
+              style={
+                styles.folderAppearanceModalHeader
+              }
+            >
+
               <View
                 style={[
                   styles.folderAppearanceModalIcon,
-                  { backgroundColor: `${colors.primary}12` },
+                  {
+                    backgroundColor:
+                      `${colors.primary}12`,
+                  },
                 ]}
               >
-                <Icon color={colors.primary} size={21} source="folder-outline" />
+                <Icon
+                  color={
+                    colors.primary
+                  }
+                  size={21}
+                  source="folder-outline"
+                />
               </View>
 
-              <View style={styles.folderAppearanceModalHeaderText}>
+              <View
+                style={
+                  styles.folderAppearanceModalHeaderText
+                }
+              >
+
                 <Text
-                  style={[styles.folderAppearanceModalTitle, { color: colors.text }]}
+                  style={[
+                    styles.folderAppearanceModalTitle,
+                    {
+                      color:
+                        colors.text,
+                    },
+                  ]}
                 >
                   Folder appearance
                 </Text>
+
                 <Text
-                  style={[styles.folderAppearanceModalSubtitle, { color: colors.textMuted }]}
+                  style={[
+                    styles.folderAppearanceModalSubtitle,
+                    {
+                      color:
+                        colors.textMuted,
+                    },
+                  ]}
                 >
                   Choose how your folders should look
                 </Text>
+
               </View>
+
             </View>
 
-            <View style={styles.folderAppearanceModeSection}>
+
+            <View
+              style={
+                styles.folderAppearanceModeSection
+              }
+            >
+
               <View
                 style={[
                   styles.folderAppearanceModeToggle,
                   {
-                    backgroundColor: colorScheme === 'dark'
-                      ? `${colors.primary}08`
-                      : colors.surfaceMuted,
-                    borderColor: colors.border,
+                    backgroundColor:
+                      colorScheme ===
+                      'dark'
+                        ? `${colors.primary}08`
+                        : colors.surfaceMuted,
+
+                    borderColor:
+                      colors.border,
                   },
                 ]}
               >
+
                 <Pressable
                   accessibilityRole="radio"
                   accessibilityState={{
-                    selected: folderAppearance.mode === 'service',
+                    selected:
+                      folderAppearance.mode ===
+                      'service',
                   }}
                   onPress={async () => {
-                    const nextSettings: FolderAppearanceSettings = {
-                      mode: 'service',
-                      color: folderAppearance.color,
+                    const nextSettings:
+                      FolderAppearanceSettings =
+                    {
+                      mode:
+                        'service',
+                      color:
+                        folderAppearance.color,
                     };
 
-                    setFolderAppearance(nextSettings);
-                    await saveFolderAppearance(nextSettings);
-                  } }
+                    setFolderAppearance(
+                      nextSettings,
+                    );
+
+                    await saveFolderAppearance(
+                      nextSettings,
+                    );
+                  }}
                   style={[
                     styles.folderAppearanceModeOption,
-                    folderAppearance.mode === 'service' && {
-                      backgroundColor: colors.surface,
-                      boxShadow: colorScheme === 'dark'
-                        ? '0 2px 6px rgba(0, 0, 0, 0.18)'
-                        : '0 2px 6px rgba(29, 78, 121, 0.08)',
+                    folderAppearance.mode ===
+                      'service' && {
+                      backgroundColor:
+                        colors.surface,
+
+                      boxShadow:
+                        colorScheme ===
+                        'dark'
+                          ? '0 2px 6px rgba(0, 0, 0, 0.18)'
+                          : '0 2px 6px rgba(29, 78, 121, 0.08)',
                     },
                   ]}
                 >
+
                   <Text
                     style={[
                       styles.folderAppearanceModeOptionText,
                       {
-                        color: folderAppearance.mode === 'service'
-                          ? colors.primary
-                          : colors.textMuted,
+                        color:
+                          folderAppearance.mode ===
+                          'service'
+                            ? colors.primary
+                            : colors.textMuted,
                       },
                     ]}
                   >
                     Service Colors
                   </Text>
+
                 </Pressable>
+
 
                 <Pressable
                   accessibilityRole="radio"
                   accessibilityState={{
-                    selected: folderAppearance.mode === 'monochrome',
+                    selected:
+                      folderAppearance.mode ===
+                      'monochrome',
                   }}
                   onPress={async () => {
-                    const nextSettings: FolderAppearanceSettings = {
-                      mode: 'monochrome',
-                      color: folderAppearance.color,
+                    const nextSettings:
+                      FolderAppearanceSettings =
+                    {
+                      mode:
+                        'monochrome',
+                      color:
+                        folderAppearance.color,
                     };
 
-                    setFolderAppearance(nextSettings);
-                    await saveFolderAppearance(nextSettings);
-                  } }
+                    setFolderAppearance(
+                      nextSettings,
+                    );
+
+                    await saveFolderAppearance(
+                      nextSettings,
+                    );
+                  }}
                   style={[
                     styles.folderAppearanceModeOption,
-                    folderAppearance.mode === 'monochrome' && {
-                      backgroundColor: colors.surface,
-                      boxShadow: colorScheme === 'dark'
-                        ? '0 2px 6px rgba(0, 0, 0, 0.18)'
-                        : '0 2px 6px rgba(29, 78, 121, 0.08)',
+                    folderAppearance.mode ===
+                      'monochrome' && {
+                      backgroundColor:
+                        colors.surface,
+
+                      boxShadow:
+                        colorScheme ===
+                        'dark'
+                          ? '0 2px 6px rgba(0, 0, 0, 0.18)'
+                          : '0 2px 6px rgba(29, 78, 121, 0.08)',
                     },
                   ]}
                 >
+
                   <Text
                     style={[
                       styles.folderAppearanceModeOptionText,
                       {
-                        color: folderAppearance.mode === 'monochrome'
-                          ? colors.primary
-                          : colors.textMuted,
+                        color:
+                          folderAppearance.mode ===
+                          'monochrome'
+                            ? colors.primary
+                            : colors.textMuted,
                       },
                     ]}
                   >
                     Monochrome
                   </Text>
+
                 </Pressable>
+
               </View>
+
 
               <Text
                 style={[
                   styles.folderAppearanceModeDescription,
-                  { color: colors.textMuted },
+                  {
+                    color:
+                      colors.textMuted,
+                  },
                 ]}
               >
-                {folderAppearance.mode === 'service'
-                  ? 'Keep category-specific colors for your folders'
-                  : 'Use one V Drive color for every folder'}
+                {
+                  folderAppearance.mode ===
+                  'service'
+                    ? 'Keep category-specific colors for your folders'
+                    : 'Use one V Drive color for every folder'
+                }
               </Text>
+
             </View>
 
-            {folderAppearance.mode === 'monochrome' ? (
-              <View style={styles.folderAppearanceColorSection}>
+
+            {folderAppearance.mode ===
+            'monochrome' ? (
+              <View
+                style={
+                  styles.folderAppearanceColorSection
+                }
+              >
+
                 <Text
                   style={[
                     styles.folderAppearanceColorSectionTitle,
-                    { color: colors.textMuted },
+                    {
+                      color:
+                        colors.textMuted,
+                    },
                   ]}
                 >
                   FOLDER COLOR
@@ -917,106 +1763,193 @@ export function ProfileScreen() {
                   style={[
                     styles.folderAppearanceColorOptions,
                     {
-                      borderColor: colors.border,
-                      backgroundColor: colors.surface,
+                      borderColor:
+                        colors.border,
+
+                      backgroundColor:
+                        colors.surface,
                     },
                   ]}
                 >
+
                   {[
-                    { label: 'Blue', color: '#2F80ED' as const },
-                    { label: 'Green', color: '#27AE60' as const },
-                    { label: 'Orange', color: '#F2994A' as const },
-                  ].map((option, index) => {
-                    const selected = folderAppearance.color === option.color;
+                    {
+                      label: 'Blue',
+                      color: '#2F80ED' as const,
+                    },
+                    {
+                      label: 'Green',
+                      color: '#27AE60' as const,
+                    },
+                    {
+                      label: 'Orange',
+                      color: '#F2994A' as const,
+                    },
+                  ].map(
+                    (
+                      option,
+                      index,
+                    ) => {
 
-                    return (
-                      <Pressable
-                        accessibilityRole="radio"
-                        accessibilityState={{ selected }}
-                        key={option.label}
-                        onPress={async () => {
-                          const nextSettings: FolderAppearanceSettings = {
-                            mode: 'monochrome',
-                            color: option.color,
-                          };
+                      const selected =
+                        folderAppearance.color ===
+                        option.color;
 
-                          setFolderAppearance(nextSettings);
-                          await saveFolderAppearance(nextSettings);
-                        } }
-                        style={({ pressed }) => [
-                          styles.folderAppearanceColorOption,
-                          {
-                            backgroundColor: pressed
-                              ? `${option.color}0A`
-                              : selected
-                                ? `${option.color}08`
-                                : 'transparent',
-                            borderTopWidth: index === 0 ? 0 : StyleSheet.hairlineWidth,
-                            borderTopColor: colors.border,
-                          },
-                        ]}
-                      >
-                        <View
-                          style={[
-                            styles.folderAppearanceColorDot,
-                            { backgroundColor: option.color },
-                          ]} />
+                      return (
+                        <Pressable
+                          accessibilityRole="radio"
+                          accessibilityState={{
+                            selected,
+                          }}
+                          key={
+                            option.label
+                          }
+                          onPress={async () => {
+                            const nextSettings:
+                              FolderAppearanceSettings =
+                            {
+                              mode:
+                                'monochrome',
+                              color:
+                                option.color,
+                            };
 
-                        <Text
-                          style={[
-                            styles.folderAppearanceColorOptionText,
-                            { color: colors.text },
+                            setFolderAppearance(
+                              nextSettings,
+                            );
+
+                            await saveFolderAppearance(
+                              nextSettings,
+                            );
+                          }}
+                          style={({
+                            pressed,
+                          }) => [
+                            styles.folderAppearanceColorOption,
+                            {
+                              backgroundColor:
+                                pressed
+                                  ? `${option.color}0A`
+                                  : selected
+                                    ? `${option.color}08`
+                                    : 'transparent',
+
+                              borderTopWidth:
+                                index ===
+                                0
+                                  ? 0
+                                  : StyleSheet.hairlineWidth,
+
+                              borderTopColor:
+                                colors.border,
+                            },
                           ]}
                         >
-                          {option.label}
-                        </Text>
 
-                        {selected ? (
                           <View
                             style={[
-                              styles.folderAppearanceCheck,
-                              { backgroundColor: option.color },
+                              styles.folderAppearanceColorDot,
+                              {
+                                backgroundColor:
+                                  option.color,
+                              },
+                            ]}
+                          />
+
+                          <Text
+                            style={[
+                              styles.folderAppearanceColorOptionText,
+                              {
+                                color:
+                                  colors.text,
+                              },
                             ]}
                           >
-                            <Icon
-                              color="#FFFFFF"
-                              size={13}
-                              source="check" />
-                          </View>
-                        ) : null}
-                      </Pressable>
-                    );
-                  })}
+                            {
+                              option.label
+                            }
+                          </Text>
+
+                          {selected ? (
+                            <View
+                              style={[
+                                styles.folderAppearanceCheck,
+                                {
+                                  backgroundColor:
+                                    option.color,
+                                },
+                              ]}
+                            >
+                              <Icon
+                                color="#FFFFFF"
+                                size={13}
+                                source="check"
+                              />
+                            </View>
+                          ) : null}
+
+                        </Pressable>
+                      );
+                    },
+                  )}
+
                 </View>
+
               </View>
             ) : null}
+
 
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Close folder appearance"
               onPress={() => {
-                setFolderAppearanceModalVisible(false);
-              } }
-              style={({ pressed }) => [
+                setFolderAppearanceModalVisible(
+                  false,
+                );
+              }}
+              style={({
+                pressed,
+              }) => [
                 styles.folderAppearanceModalClose,
                 {
-                  backgroundColor: pressed ? `${colors.primary}0A` : 'transparent',
+                  backgroundColor:
+                    pressed
+                      ? `${colors.primary}0A`
+                      : 'transparent',
                 },
               ]}
             >
+
               <Text
-                style={[styles.folderAppearanceModalCloseText, { color: colors.primary }]}
+                style={[
+                  styles.folderAppearanceModalCloseText,
+                  {
+                    color:
+                      colors.primary,
+                  },
+                ]}
               >
                 Done
               </Text>
+
             </Pressable>
+
           </Pressable>
+
         </Pressable>
-      </Modal></>
+
+      </Modal>
+    </>
   );
 }
 
+
+/* ========================================================= */
+/* STYLES */
+/* ========================================================= */
+
 const styles = StyleSheet.create({
+
   screen: {
     flex: 1,
   },
@@ -1029,6 +1962,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
   },
+
+
+  /* TOP BAR */
 
   topBar: {
     alignItems: 'center',
@@ -1052,6 +1988,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+
+  /* PROFILE */
 
   profileCard: {
     borderCurve: 'continuous',
@@ -1183,6 +2122,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
+
+  /* SECTIONS */
+
   section: {
     gap: 9,
     paddingTop: 15,
@@ -1202,6 +2144,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },
+
 
   /* ACCESS REQUESTS */
 
@@ -1234,6 +2177,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
 
+
+  /* DETAIL ROWS */
+
   detailRow: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -1247,7 +2193,8 @@ const styles = StyleSheet.create({
 
   securitySectionCard: {
     borderRadius: 21,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth:
+      StyleSheet.hairlineWidth,
   },
 
   accountDetailRow: {
@@ -1280,7 +2227,8 @@ const styles = StyleSheet.create({
   },
 
   detailDivider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomWidth:
+      StyleSheet.hairlineWidth,
   },
 
   detailLabel: {
@@ -1342,11 +2290,18 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
     textAlign: 'left',
     transform: [
-      { translateX: 12 },
-      { translateY: -2 },
+      {
+        translateX: 12,
+      },
+      {
+        translateY: -2,
+      },
     ],
     width: '100%',
   },
+
+
+  /* APPEARANCE */
 
   appearanceSectionCard: {
     borderRadius: 21,
@@ -1382,9 +2337,73 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
+
+  /* PRIVACY & SUPPORT */
+
+  privacySupportCard: {
+    borderCurve: 'continuous',
+    borderRadius: 21,
+    borderWidth:
+      StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+
+  privacySupportItem: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    minHeight: 92,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+
+  privacySupportIcon: {
+    alignItems: 'center',
+    borderRadius: 14,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+
+  privacySupportContent: {
+    flex: 1,
+    marginLeft: 13,
+    minWidth: 0,
+    paddingRight: 8,
+  },
+
+  privacySupportTitle: {
+    fontFamily: fontFamilies.semibold,
+    fontSize: 14.5,
+    lineHeight: 19,
+  },
+
+  privacySupportDescription: {
+    fontFamily: fontFamilies.regular,
+    fontSize: 12.5,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+
+  privacySupportAction: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 2,
+    justifyContent: 'flex-end',
+    minWidth: 70,
+  },
+
+  privacySupportActionText: {
+    fontFamily: fontFamilies.semibold,
+    fontSize: 13.5,
+  },
+
+
+  /* FOLDER MODAL */
+
   folderAppearanceModalOverlay: {
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.46)',
+    backgroundColor:
+      'rgba(0, 0, 0, 0.46)',
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 28,
@@ -1393,7 +2412,8 @@ const styles = StyleSheet.create({
   folderAppearanceModalCard: {
     borderCurve: 'continuous',
     borderRadius: 24,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth:
+      StyleSheet.hairlineWidth,
     maxWidth: 430,
     overflow: 'hidden',
     paddingHorizontal: 18,
@@ -1441,7 +2461,8 @@ const styles = StyleSheet.create({
   folderAppearanceModeToggle: {
     borderCurve: 'continuous',
     borderRadius: 13,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth:
+      StyleSheet.hairlineWidth,
     flexDirection: 'row',
     padding: 3,
   },
@@ -1484,7 +2505,8 @@ const styles = StyleSheet.create({
   folderAppearanceColorOptions: {
     borderCurve: 'continuous',
     borderRadius: 14,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth:
+      StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },
 
@@ -1529,10 +2551,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
+
+  /* SIGN OUT */
+
   signOutSection: {
     borderCurve: 'continuous',
     borderRadius: 20,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth:
+      StyleSheet.hairlineWidth,
     marginTop: 24,
     overflow: 'hidden',
   },
@@ -1552,6 +2578,9 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 
+
+  /* FOOTER */
+
   footer: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -1569,7 +2598,8 @@ const styles = StyleSheet.create({
   versionBadge: {
     borderCurve: 'continuous',
     borderRadius: 99,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth:
+      StyleSheet.hairlineWidth,
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
@@ -1577,6 +2607,9 @@ const styles = StyleSheet.create({
   versionText: {
     fontFamily: fontFamilies.semibold,
     fontSize: 16,
-    fontVariant: ['tabular-nums'],
+    fontVariant: [
+      'tabular-nums',
+    ],
   },
+
 });

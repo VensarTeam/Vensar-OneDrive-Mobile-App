@@ -12,6 +12,8 @@ import {
   View,
 } from 'react-native';
 
+import * as SecureStore from 'expo-secure-store';
+
 import {
   useFocusEffect,
   useNavigation,
@@ -40,13 +42,20 @@ import {
 
 
 /* ========================================================= */
+/* CONSTANTS */
+/* ========================================================= */
+
+const ONBOARDING_COMPLETED_KEY =
+  'vdrive_onboarding_completed';
+
+
+/* ========================================================= */
 /* NAVIGATION TYPES */
 /* ========================================================= */
 
 type PrivacyPolicyNavigationProp =
   NativeStackNavigationProp<
-    RootStackParamList,
-    'PrivacyPolicy'
+    RootStackParamList
   >;
 
 type PrivacyPolicyRouteProp =
@@ -136,13 +145,14 @@ export function PrivacyPolicyScreen() {
      */
     navigation.navigate(
       'PrivacyPolicyDetail',
+      {},
     );
   };
 
 
   /* ======================================================= */
   /* TERMS */
-/* ======================================================= */
+  /* ======================================================= */
 
   const openTerms = () => {
 
@@ -160,13 +170,14 @@ export function PrivacyPolicyScreen() {
      */
     navigation.navigate(
       'TermsConditionsDetail',
+      {},
     );
   };
 
 
   /* ======================================================= */
   /* SUPPORT */
-/* ======================================================= */
+  /* ======================================================= */
 
   const openSupport = () => {
 
@@ -180,8 +191,50 @@ export function PrivacyPolicyScreen() {
 
 
   /* ======================================================= */
+  /* COMPLETE ONBOARDING */
+  /* ======================================================= */
+
+  const completeOnboarding = async () => {
+
+    /*
+     * This should only be possible when both
+     * Privacy Policy and Terms have been accepted.
+     */
+    if (!canContinue) {
+      return;
+    }
+
+    try {
+
+      /*
+       * Persist onboarding completion so that
+       * Welcome + Privacy/Terms are not shown
+       * again on future app launches.
+       */
+      await SecureStore.setItemAsync(
+        ONBOARDING_COMPLETED_KEY,
+        'true',
+      );
+
+      /*
+       * Continue to Login.
+       */
+      navigation.navigate('Login');
+
+    } catch (error) {
+
+      console.error(
+        'Failed to save onboarding completion:',
+        error,
+      );
+
+    }
+  };
+
+
+  /* ======================================================= */
   /* RENDER */
-/* ======================================================= */
+  /* ======================================================= */
 
   return (
     <View style={styles.container}>
@@ -535,11 +588,7 @@ export function PrivacyPolicyScreen() {
               !canContinue &&
                 styles.continueButtonDisabled,
             ]}
-            onPress={() =>
-              navigation.navigate(
-                'Login',
-              )
-            }
+            onPress={completeOnboarding}
           >
 
             <Text

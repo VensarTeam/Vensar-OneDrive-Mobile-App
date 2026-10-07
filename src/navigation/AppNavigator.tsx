@@ -1,7 +1,11 @@
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
+
 import {
   NavigationContainer,
 } from '@react-navigation/native';
+
 import {
   createNativeStackNavigator,
 } from '@react-navigation/native-stack';
@@ -26,11 +30,40 @@ import { HomeTabs } from './HomeTabs';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+const ONBOARDING_COMPLETED_KEY = 'vdrive_onboarding_completed';
+
 export function AppNavigator() {
   const { navigationTheme, theme } = useAppTheme();
   const { isHydrating } = useAuthSession();
 
-  if (isHydrating) {
+  const [isOnboardingHydrating, setIsOnboardingHydrating] =
+    useState(true);
+
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] =
+    useState(false);
+
+  useEffect(() => {
+    const loadOnboardingStatus = async () => {
+      try {
+        const completed = await SecureStore.getItemAsync(
+          ONBOARDING_COMPLETED_KEY,
+        );
+
+        setHasCompletedOnboarding(completed === 'true');
+      } catch (error) {
+        console.error(
+          'Failed to load onboarding status:',
+          error,
+        );
+      } finally {
+        setIsOnboardingHydrating(false);
+      }
+    };
+
+    loadOnboardingStatus();
+  }, []);
+
+  if (isHydrating || isOnboardingHydrating) {
     return (
       <View
         style={[
@@ -46,7 +79,11 @@ export function AppNavigator() {
   return (
     <NavigationContainer theme={navigationTheme}>
       <Stack.Navigator
-        initialRouteName="Welcome"
+        initialRouteName={
+          hasCompletedOnboarding
+            ? 'Login'
+            : 'Welcome'
+        }
         screenOptions={{
           contentStyle: {
             backgroundColor: theme.colors.background,
@@ -56,34 +93,34 @@ export function AppNavigator() {
         }}
       >
         <Stack.Screen
-  name="Welcome"
-  component={WelcomeScreen}
-  options={{ headerShown: false }}
-/>
+          name="Welcome"
+          component={WelcomeScreen}
+          options={{ headerShown: false }}
+        />
 
-<Stack.Screen
-  name="PrivacyPolicy"
-  component={PrivacyPolicyScreen}
-  options={{ headerShown: false }}
-/>
+        <Stack.Screen
+          name="PrivacyPolicy"
+          component={PrivacyPolicyScreen}
+          options={{ headerShown: false }}
+        />
 
-<Stack.Screen
-  name="PrivacyPolicyDetail"
-  component={PrivacyPolicyDetailScreen}
-  options={{ headerShown: false }}
-/>
+        <Stack.Screen
+          name="PrivacyPolicyDetail"
+          component={PrivacyPolicyDetailScreen}
+          options={{ headerShown: false }}
+        />
 
-<Stack.Screen
-  name="TermsConditionsDetail"
-  component={TermsConditionsDetailScreen}
-  options={{ headerShown: false }}
-/>
+        <Stack.Screen
+          name="TermsConditionsDetail"
+          component={TermsConditionsDetailScreen}
+          options={{ headerShown: false }}
+        />
 
-<Stack.Screen
-  name="ContactSupport"
-  component={ContactSupportScreen}
-  options={{ headerShown: false }}
-/>
+        <Stack.Screen
+          name="ContactSupport"
+          component={ContactSupportScreen}
+          options={{ headerShown: false }}
+        />
 
         <Stack.Screen
           name="Login"

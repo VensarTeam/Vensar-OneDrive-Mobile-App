@@ -147,7 +147,7 @@ export function ResourceActionModal(props: {
   if (!resource) return null;
 
   const reportError = (error: unknown, fallback: string) => {
-    showToast({ message: error instanceof Error ? error.message : fallback, tone: 'error' });
+    showToast({ message: error instanceof Error ? error.message : fallback, title: fallback, tone: 'error' });
   };
 
   const openCopy = async () => {
@@ -291,7 +291,7 @@ export function ResourceActionModal(props: {
     <BottomSheetShell leading={leading} onClose={onClose} title={mode === 'copy' || mode === 'move' ? `${mode === 'move' ? 'Move' : 'Copy'} ${resources.length > 1 ? `${resources.length} items` : `“${resource.item.name}”`} to` : mode === 'share' ? `Share “${resource.item.name}”` : resource.item.name} visible>
       {mode === 'actions' ? (
         <ScrollView contentContainerStyle={styles.actions}>
-          {isReadOnly ? <View style={[styles.permissionNotice, { backgroundColor: `${colors.primary}0D`, borderColor: `${colors.primary}2B` }]}><View style={[styles.permissionNoticeIcon, { backgroundColor: `${colors.primary}16` }]}><Icon color={colors.primary} size={23} source="shield-lock-outline" /></View><View style={styles.permissionNoticeCopy}><Text style={[styles.permissionNoticeTitle, { color: colors.text }]}>View-only shared access</Text><Text selectable style={[styles.permissionNoticeText, { color: colors.textMuted }]}>You can browse this shared content{resource.type === 'file' ? ' and download this file' : ''}. Copy, Move, Share, and permission changes require edit access.</Text></View></View> : null}
+          {isReadOnly ? <View style={[styles.permissionNotice, { backgroundColor: `${colors.primary}0D`, borderColor: `${colors.primary}2B` }]}><View style={[styles.permissionNoticeIcon, { backgroundColor: `${colors.primary}16` }]}><Icon color={colors.primary} size={23} source="shield-lock-outline" /></View><View style={styles.permissionNoticeCopy}><Text style={[styles.permissionNoticeTitle, { color: colors.text }]}>View-only shared access</Text><Text selectable style={[styles.permissionNoticeText, { color: colors.textMuted }]}>You can browse shared folders. File previews and downloads require permission. Copy, Move, Share, and permission changes require edit access.</Text></View></View> : null}
           {canShareResource ? <ActionRow disabled={Boolean(activeQuickAction)} icon="share-variant-outline" label="Share and manage access" onPress={openShare} /> : null}
           {canShareResource ? <ActionRow disabled={Boolean(activeQuickAction)} icon="link-variant" label="Copy link" loading={activeQuickAction === 'copy-link'} onPress={copyLink} /> : null}
           {canEditResource ? <ActionRow disabled={Boolean(activeQuickAction)} icon="content-copy" label="Copy to another folder" onPress={openCopy} /> : null}

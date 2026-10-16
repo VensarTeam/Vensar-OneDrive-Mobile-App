@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { apiRequest } from '../../../core/api/apiClient';
 import type { ApiEnvelope } from '../../../core/api/api-response';
@@ -221,6 +222,7 @@ function adminAlertToNotification(
 }
 
 export function NotificationsScreen() {
+  const insets = useSafeAreaInsets();
   const { theme } = useAppTheme();
   const { colors } = theme;
   const navigation =
@@ -407,11 +409,12 @@ setLastReadAt(storedLastReadAt);
         styles.screen,
         {
           backgroundColor: colors.background,
+          paddingBottom: process.env.EXPO_OS === 'ios' ? insets.bottom : 0,
         },
       ]}
     >
       {/* HEADER */}
-      <View style={styles.header}>
+      <View style={[styles.header, process.env.EXPO_OS === 'ios' && { paddingTop: insets.top + 12 }]}>
         <View style={styles.headerTopRow}>
           <Pressable
             accessibilityLabel="Go back"
@@ -574,6 +577,7 @@ setLastReadAt(storedLastReadAt);
         </View>
       ) : (
         <ScrollView
+          contentInsetAdjustmentBehavior="never"
           contentContainerStyle={styles.content}
           refreshControl={
             <RefreshControl

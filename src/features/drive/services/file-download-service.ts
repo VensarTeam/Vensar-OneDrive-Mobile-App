@@ -53,7 +53,7 @@ async function getDownloadDirectory() {
   return ensureVensarDirectory(selectedParent);
 }
 
-async function fetchFileBytes(fileId: string) {
+async function fetchFileBytes(fileId: string, action: 'preview' | 'download') {
   const token = await getSecureItem(storageKeys.authToken);
   if (!token) throw new ApiError('Your session has expired. Sign in again.', 401);
 
@@ -61,23 +61,40 @@ async function fetchFileBytes(fileId: string) {
     new URL(`${env.endpoints.files}/${encodeURIComponent(fileId)}/download`, env.apiBaseUrl),
     { headers: { Authorization: `Bearer ${token}` } },
   );
-  if (!response.ok) throw new ApiError('Unable to download this file.', response.status);
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new ApiError('Your session has expired. Sign in again.', 401);
+    }
+    if (response.status === 403) {
+      throw new ApiError(
+        `You don’t have permission to ${action} this file. Ask your manager or the file owner for access.`,
+        403,
+        'FILE_ACCESS_DENIED',
+      );
+    }
+    if (response.status === 404) {
+      throw new ApiError('This file is no longer available. Refresh the file list and try again.', 404);
+    }
+    throw new ApiError(`Unable to ${action} this file right now. Please try again.`, response.status);
+  }
   return response.bytes();
 }
 
 export async function prepareFileForPreview(fileId: string, fileName: string, mimeType: string) {
+  const bytes = await fetchFileBytes(fileId, 'preview');
   const directory = new Directory(Paths.cache, previewDirectoryName);
   directory.create({ idempotent: true, intermediates: true });
   const file = new File(directory, safeFileName(fileName));
   file.create({ intermediates: true, overwrite: true });
-  file.write(await fetchFileBytes(fileId));
+  file.write(bytes);
   return { fileName: file.name, mimeType, uri: file.uri };
 }
 
 export async function downloadAndOpenFile(fileId: string, fileName: string, mimeType: string) {
+  const bytes = await fetchFileBytes(fileId, 'download');
   const directory = await getDownloadDirectory();
   const savedName = getAvailableFileName(directory, safeFileName(fileName));
   const file = directory.createFile(savedName, mimeType);
-  file.write(await fetchFileBytes(fileId));
+  file.write(bytes);
   return { directoryName: downloadDirectoryName, fileName: savedName, uri: file.uri };
 }

@@ -391,8 +391,7 @@ export function PrivacyPolicyDetailScreen() {
           >
             For questions about your account, access, or requests
             concerning personal information, contact your Vensar
-            administrator. A dedicated privacy contact will be added
-            after review.
+            administrator or use Contact Support in the app.
           </Text>
 
         </PolicySection>

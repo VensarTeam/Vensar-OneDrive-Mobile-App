@@ -7,6 +7,7 @@ import { Icon } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useResponsiveLayout } from '../../../core/responsive';
+import { ApiError } from '../../../core/api/ApiError';
 import { useAppTheme } from '../../../core/theme';
 import { fontFamilies } from '../../../core/theme/typography';
 import type { HomeTabParamList } from '../../../navigation/HomeTabs';
@@ -77,7 +78,7 @@ export function SharedScreen() {
       const saved = await downloadAndOpenFile(item.resourceId, item.name, item.mimeType);
       showToast({ message: `${saved.fileName} saved to ${saved.directoryName}.`, title: 'Download complete' });
     } catch (error) {
-      showToast({ message: error instanceof Error ? error.message : 'Unable to download file.', tone: 'error' });
+      showToast({ message: error instanceof Error ? error.message : 'Unable to download file.', title: error instanceof ApiError && error.status === 403 ? 'Download access denied' : 'Unable to download file', tone: 'error' });
     } finally {
       setDownloadingId(undefined);
     }
@@ -100,7 +101,7 @@ export function SharedScreen() {
     try {
       setPreviewFile(await prepareFileForPreview(item.resourceId, item.name, item.mimeType));
     } catch (error) {
-      showToast({ message: error instanceof Error ? error.message : 'Unable to open file preview.', tone: 'error' });
+      showToast({ message: error instanceof Error ? error.message : 'Unable to open file preview.', title: error instanceof ApiError && error.status === 403 ? 'Preview access denied' : 'Unable to preview file', tone: 'error' });
     } finally {
       setOpeningId(undefined);
     }

@@ -324,9 +324,8 @@ export function TermsConditionsDetailScreen() {
           title="Questions and legal details"
         >
           <Text style={styles.bodyText}>
-            Contact your Vensar administrator with questions about these
-            terms. The contracting legal entity, formal contact details,
-            and governing jurisdiction will be added after review.
+            Contact your Vensar administrator or use Contact Support in
+            the app with questions about these terms.
           </Text>
         </PolicySection>
 

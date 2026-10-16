@@ -25,6 +25,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useResponsiveLayout } from "../../../core/responsive";
+import { ApiError } from "../../../core/api/ApiError";
 import { useAuthSession } from "../../auth/services/auth-session-provider";
 import { useAppTheme } from "../../../core/theme";
 import { fontFamilies } from "../../../core/theme/typography";
@@ -129,7 +130,7 @@ export function DriveScreen({ route }: Props) {
     permissionNoticeContext.current = context;
     Alert.alert(
       "View-only access",
-      "This item was shared with view-only permission. You can browse folders and download files, but Copy, Move, Share, and access-management actions are unavailable.",
+      "This item was shared with view-only permission. You can browse shared folders. File previews and downloads require permission. Copy, Move, Share, and access-management actions are unavailable.",
       [{ text: "Got it" }],
     );
   }, [folderId, isReadOnly, projectId, serviceId]);
@@ -187,6 +188,9 @@ export function DriveScreen({ route }: Props) {
         });
       } catch (error) {
         showToast({
+          title: error instanceof ApiError && error.status === 403
+            ? "Preview access denied"
+            : "Unable to preview file",
           message:
             error instanceof Error
               ? error.message

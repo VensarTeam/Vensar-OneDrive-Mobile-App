@@ -173,12 +173,13 @@ export function LoginScreen({ navigation }: Props) {
       />
 
       <KeyboardAvoidingView
-  behavior="height"
+  behavior={process.env.EXPO_OS === 'ios' ? 'padding' : 'height'}
   style={{ flex: 1 }}
 >
   <ScrollView
     ref={scrollViewRef}
     bounces={false}
+    contentInsetAdjustmentBehavior="never"
     contentContainerStyle={[
       styles.scrollContent,
       {
@@ -355,22 +356,24 @@ export function LoginScreen({ navigation }: Props) {
                 styles.signInButtonPressed,
             ]}
           >
-            <LinearGradient
-              colors={[
-                '#28B2FF',
-                '#1478F4',
-                '#1558D5',
-              ]}
-              start={{
-                x: 0,
-                y: 0.5,
-              }}
-              end={{
-                x: 1,
-                y: 0.5,
-              }}
-              style={styles.signInButton}
-            >
+            <View style={styles.signInButton}>
+              <LinearGradient
+                colors={[
+                  '#28B2FF',
+                  '#1478F4',
+                  '#1558D5',
+                ]}
+                start={{
+                  x: 0,
+                  y: 0.5,
+                }}
+                end={{
+                  x: 1,
+                  y: 0.5,
+                }}
+                pointerEvents="none"
+                style={StyleSheet.absoluteFill}
+              />
               {vm.isSubmitting ? (
                 <Text style={styles.signInText}>
                   Signing in...
@@ -388,7 +391,7 @@ export function LoginScreen({ navigation }: Props) {
                   />
                 </>
               )}
-            </LinearGradient>
+            </View>
           </Pressable>
 
           {/* ===================================================== */}
@@ -437,7 +440,7 @@ export function LoginScreen({ navigation }: Props) {
                   : '#A8B3C2'
               }
               size={32}
-              source="fingerprint"
+              source="shield-lock-outline"
             />
 
             <Text
@@ -447,7 +450,7 @@ export function LoginScreen({ navigation }: Props) {
                   styles.fingerprintTextDisabled,
               ]}
             >
-              Login with fingerprint
+              Sign in with device security
             </Text>
           </Pressable>
         </View>
@@ -680,7 +683,10 @@ const styles = StyleSheet.create({
   },
 
   signInButton: {
-    height: 58,
+    minHeight: 58,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    overflow: 'hidden',
     borderRadius: 22,
     flexDirection: 'row',
     alignItems: 'center',

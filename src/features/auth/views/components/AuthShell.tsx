@@ -39,7 +39,8 @@ export function AuthShell({
       style={styles.flex}
     >
       <ScrollView
-        automaticallyAdjustKeyboardInsets={process.env.EXPO_OS === 'ios'}
+        // KeyboardAvoidingView owns keyboard spacing; content owns safe-area padding.
+        automaticallyAdjustKeyboardInsets={false}
         contentContainerStyle={[
           styles.scrollContent,
           {
@@ -48,7 +49,7 @@ export function AuthShell({
             paddingTop: Math.max(insets.top, 20),
           },
         ]}
-        contentInsetAdjustmentBehavior="automatic"
+        contentInsetAdjustmentBehavior="never"
         keyboardDismissMode={
           process.env.EXPO_OS === 'ios' ? 'interactive' : 'on-drag'
         }

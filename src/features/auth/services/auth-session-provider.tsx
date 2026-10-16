@@ -47,9 +47,6 @@ type AuthSessionContextValue = {
 const AuthSessionContext =
   createContext<AuthSessionContextValue | null>(null);
 
-const BACKGROUND_LOCK_DELAY_MS =
-  5 * 60 * 1000;
-
 export function AuthSessionProvider({
   children,
 }: PropsWithChildren) {
@@ -76,14 +73,6 @@ export function AuthSessionProvider({
 
   const isAuthenticatingRef =
     useRef(false);
-
-  const backgroundedAtRef =
-    useRef<number | null>(null);
-
-  const backgroundLockTimerRef =
-    useRef<ReturnType<typeof setTimeout> | null>(
-      null,
-    );
 
   const appStateRef =
     useRef(AppState.currentState);
@@ -202,114 +191,38 @@ export function AuthSessionProvider({
           appStateRef.current =
             nextState;
 
-          /*
-           * APP GOING INTO BACKGROUND
-           */
+          // Lock as soon as the app leaves the foreground.
+          // The authentication prompt itself can make iOS inactive,
+          // so that transition must not restart the lock flow.
           if (
             nextState !== 'active' &&
-            wasActive &&
             isAuthenticated &&
-            !isAuthenticatingRef.current
+            (nextState === 'background' ||
+              (wasActive &&
+                !isAuthenticatingRef.current))
           ) {
-            backgroundedAtRef.current =
-              Date.now();
-
-            /*
-             * Existing 5-minute biometric
-             * lock behavior.
-             */
-            if (
-              backgroundLockTimerRef.current
-            ) {
-              clearTimeout(
-                backgroundLockTimerRef.current,
-              );
-            }
-
-            backgroundLockTimerRef.current =
-              setTimeout(() => {
-                setLocked(true);
-                setLockError(null);
-              }, BACKGROUND_LOCK_DELAY_MS);
+            setLocked(true);
+            setLockError(null);
 
             return;
           }
 
-          /*
-           * APP BECOMING ACTIVE AGAIN
-           */
           if (
-            nextState === 'active'
+            nextState === 'active' &&
+            !wasActive &&
+            isAuthenticated &&
+            !isAuthenticatingRef.current
           ) {
-            /*
-             * Stop the biometric background
-             * timer because we're active again.
-             */
-            if (
-              backgroundLockTimerRef.current
-            ) {
-              clearTimeout(
-                backgroundLockTimerRef.current,
-              );
-
-              backgroundLockTimerRef.current =
-                null;
-            }
-
-            const backgroundedAt =
-              backgroundedAtRef.current;
-
-            backgroundedAtRef.current =
-              null;
-
-            /*
-             * First check the 24-hour session.
-             *
-             * This happens before applying the
-             * biometric lock.
-             */
-            if (
-              backgroundedAt !== null &&
-              isAuthenticated &&
-              !isAuthenticatingRef.current
-            ) {
-              void checkSessionExpiry()
-                .catch(() => {
-                  void signOut();
-                });
-            }
-
-            /*
-             * Existing 5-minute biometric lock.
-             */
-            if (
-              backgroundedAt !== null &&
-              Date.now() -
-                backgroundedAt >=
-                BACKGROUND_LOCK_DELAY_MS &&
-              isAuthenticated &&
-              !isAuthenticatingRef.current
-            ) {
-              setLocked(true);
-              setLockError(null);
-            }
+            void checkSessionExpiry()
+              .catch(() => {
+                void signOut();
+              });
           }
         },
       );
 
     return () => {
       subscription.remove();
-
-      if (
-        backgroundLockTimerRef.current
-      ) {
-        clearTimeout(
-          backgroundLockTimerRef.current,
-        );
-
-        backgroundLockTimerRef.current =
-          null;
-      }
     };
   }, [
     isAuthenticated,
@@ -348,32 +261,11 @@ export function AuthSessionProvider({
         setLockError(null);
 
         try {
-          const [
-            hasHardware,
-            isEnrolled,
-          ] = await Promise.all([
-            LocalAuthentication
-              .hasHardwareAsync(),
-
-            LocalAuthentication
-              .isEnrolledAsync(),
-          ]);
-
-          if (
-            !hasHardware ||
-            !isEnrolled
-          ) {
-            setLocked(false);
-            setLockError(null);
-
-            return true;
-          }
-
           const result =
             await LocalAuthentication
               .authenticateAsync({
                 biometricsSecurityLevel:
-                  'strong',
+                  'weak',
 
                 cancelLabel:
                   'Cancel',
@@ -385,10 +277,10 @@ export function AuthSessionProvider({
                   'Confirm your identity to access company files.',
 
                 promptMessage:
-                  'Unlock Vensar Drive',
+                  'Unlock V Drive',
 
                 promptSubtitle:
-                  'Use your fingerprint or device PIN',
+                  'Use your device security to continue',
               });
 
           if (result.success) {
@@ -407,7 +299,11 @@ export function AuthSessionProvider({
             setLockError(
               result.error ===
                 'lockout'
-                ? 'Biometrics are temporarily locked. Try again later or sign out.'
+                ? 'Device security is temporarily locked. Try again later or sign out.'
+                : result.error === 'not_available' ||
+                    result.error === 'not_enrolled' ||
+                    result.error === 'passcode_not_set'
+                  ? 'Set up device security to unlock, or sign out.'
                 : 'Authentication failed. Please try again.',
             );
           }

@@ -12,11 +12,16 @@
       "distribution": "internal"
     },
     "production": {
-  "autoIncrement": true,
-  "android": {
-    "buildType": "apk"
-  }
-}
+      "autoIncrement": true,
+      "distribution": "store",
+      "ios": {
+        "buildConfiguration": "Release",
+        "scheme": "oneDriveVensarApp"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    }
   },
   "submit": {
     "production": {}

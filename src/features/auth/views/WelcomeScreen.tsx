@@ -4,16 +4,19 @@ import {
   Animated,
   Image,
   PanResponder,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 
 const KNOB_SIZE = 48;
 
 export function WelcomeScreen() {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   const sliderWidthRef = useRef(0);
 
@@ -121,6 +124,14 @@ export function WelcomeScreen() {
       <View style={styles.peachCircleRight} />
       <View style={styles.blueCircleBottom} />
 
+      <ScrollView
+        contentInsetAdjustmentBehavior="never"
+        contentContainerStyle={[styles.scrollContent, {
+          paddingTop: Math.max(insets.top, 40),
+          paddingBottom: Math.max(insets.bottom, 34),
+        }]}
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.content}>
         <Image
           source={require('../../../../assets/vensar-company-logo.png')}
@@ -159,12 +170,14 @@ export function WelcomeScreen() {
               event.nativeEvent.layout.width;
           }}
         >
-          <LinearGradient
-            colors={['#6EC8F4', '#5B93E6']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.sliderTrack}
-          >
+          <View style={styles.sliderTrack}>
+            <LinearGradient
+              colors={['#6EC8F4', '#5B93E6']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              pointerEvents="none"
+              style={StyleSheet.absoluteFill}
+            />
             {/* Reverse gradient fades in as the slider moves */}
             <Animated.View
               pointerEvents="none"
@@ -206,9 +219,10 @@ export function WelcomeScreen() {
                 resizeMode="contain"
               />
             </Animated.View>
-          </LinearGradient>
+          </View>
         </View>
       </View>
+      </ScrollView>
     </View>
   );
 }
@@ -259,11 +273,15 @@ blueCircleBottom: {
   position: 'absolute',
   width: 300,
 },
+  scrollContent: {
+    flexGrow: 1,
+  },
+
   content: {
     alignItems: 'center',
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 32,
-    paddingTop: 40,
+    paddingBottom: 32,
   },
 
   logo: {
@@ -306,8 +324,10 @@ blueCircleBottom: {
   },
 
   bottomSection: {
-    paddingBottom: 34,
     paddingHorizontal: 32,
+    width: '100%',
+    maxWidth: 510,
+    alignSelf: 'center',
   },
 
   sliderContainer: {

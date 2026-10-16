@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { apiRequest } from '../../../core/api/apiClient';
 import type { ApiEnvelope } from '../../../core/api/api-response';
@@ -128,6 +129,7 @@ function getStatusLabel(status: RequestStatus) {
 }
 
 export function AccessRequestsScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { theme } = useAppTheme();
   const { colors } = theme;
@@ -230,11 +232,12 @@ export function AccessRequestsScreen() {
         styles.screen,
         {
           backgroundColor: colors.background,
+          paddingBottom: process.env.EXPO_OS === 'ios' ? insets.bottom : 0,
         },
       ]}
     >
       {/* HEADER */}
-      <View style={styles.header}>
+      <View style={[styles.header, process.env.EXPO_OS === 'ios' && { paddingTop: insets.top + 12 }]}>
         <Pressable
           accessibilityLabel="Go back"
           accessibilityRole="button"
@@ -332,6 +335,7 @@ export function AccessRequestsScreen() {
         </View>
       ) : (
         <ScrollView
+          contentInsetAdjustmentBehavior="never"
           contentContainerStyle={styles.content}
           refreshControl={
             <RefreshControl

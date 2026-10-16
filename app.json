@@ -4,10 +4,9 @@
     "slug": "oneDriveVensarApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/appstore-icon.png",
+    "icon": "./assets/ios-app-icon.png",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/appstore-icon.png",
       "supportsTablet": true,
       "bundleIdentifier": "com.vensar.vdrive"
     },
@@ -34,20 +33,19 @@
         "expo-secure-store",
         {
           "configureAndroidBackup": true,
-          "faceIDPermission": "Use Face ID to securely unlock Vensar Drive and access your company files."
+          "faceIDPermission": "Use Face ID to securely unlock V Drive and access your company files."
         }
       ],
       [
         "expo-local-authentication",
         {
-          "faceIDPermission": "Use Face ID to securely unlock Vensar Drive and access your company files."
+          "faceIDPermission": "Use Face ID to securely unlock V Drive and access your company files."
         }
       ],
       "expo-web-browser",
       "expo-image",
       "expo-font",
       "expo-sharing",
-      
       [
         "expo-splash-screen",
         {
@@ -62,8 +60,9 @@
         }
       ],
       [
-  "expo-build-properties"
-]
+        "expo-build-properties"
+      ],
+      "expo-status-bar"
     ],
     "extra": {
       "eas": {

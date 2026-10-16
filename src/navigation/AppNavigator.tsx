@@ -171,7 +171,7 @@ export function AppNavigator() {
    * This happens when:
    *
    * 1. The app is completely closed and reopened.
-   * 2. The app was backgrounded for 5+ minutes.
+   * 2. The app leaves the foreground and is reopened.
    *
    * After successful biometric authentication,
    * isLocked becomes false and the normal navigator

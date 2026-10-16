@@ -1,5 +1,7 @@
+import { useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
+  AppState,
   Image,
   Pressable,
   StyleSheet,
@@ -10,6 +12,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 
+import { useSplashFinished } from '../../../bootstrap/SplashGate';
 import { useAppTheme } from '../../../core/theme';
 import { fontFamilies } from '../../../core/theme/typography';
 import { useAuthSession } from '../services/auth-session-provider';
@@ -17,12 +20,67 @@ import { useAuthSession } from '../services/auth-session-provider';
 export function BiometricLockScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useAppTheme();
+  const splashFinished = useSplashFinished();
+  const autoPromptedRef = useRef(false);
 
   const {
     isUnlocking,
     lockError,
+    signOut,
     unlock,
   } = useAuthSession();
+
+  useEffect(() => {
+    if (!splashFinished) return;
+
+    let promptTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const scheduleUnlock = () => {
+      if (
+        autoPromptedRef.current ||
+        promptTimer ||
+        AppState.currentState === 'background' ||
+        AppState.currentState === 'inactive'
+      ) {
+        return;
+      }
+
+      promptTimer = setTimeout(() => {
+        promptTimer = null;
+
+        if (
+          autoPromptedRef.current ||
+          AppState.currentState === 'background' ||
+          AppState.currentState === 'inactive'
+        ) {
+          return;
+        }
+
+        autoPromptedRef.current = true;
+        void unlock();
+      }, 300);
+    };
+
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'background') {
+        autoPromptedRef.current = false;
+      } else if (state === 'active') {
+        scheduleUnlock();
+      }
+    });
+
+    scheduleUnlock();
+
+    return () => {
+      subscription.remove();
+      if (promptTimer) clearTimeout(promptTimer);
+    };
+  }, [splashFinished, unlock]);
+
+  const handleUnlock = () => {
+    autoPromptedRef.current = true;
+    void unlock();
+  };
 
   return (
     <View
@@ -94,7 +152,7 @@ export function BiometricLockScreen() {
           accessibilityLabel="Unlock"
           accessibilityRole="button"
           disabled={isUnlocking}
-          onPress={() => void unlock()}
+          onPress={handleUnlock}
           style={({ pressed }) => [
             styles.unlockButton,
             {
@@ -120,6 +178,15 @@ export function BiometricLockScreen() {
               Unlock
             </Text>
           )}
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          disabled={isUnlocking}
+          onPress={() => void signOut()}
+          style={styles.signOutButton}
+        >
+          <Text style={[styles.signOutText, { color: theme.colors.textMuted }]}>Sign out</Text>
         </Pressable>
       </View>
 
@@ -203,6 +270,16 @@ const styles = StyleSheet.create({
     fontSize: 27,
     lineHeight: 34,
     textAlign: 'center',
+  },
+
+  signOutButton: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+
+  signOutText: {
+    fontFamily: fontFamilies.semibold,
+    fontSize: 14,
   },
 
   versionText: {

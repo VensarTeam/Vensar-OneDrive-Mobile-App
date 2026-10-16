@@ -284,8 +284,8 @@ const styles = StyleSheet.create({
   },
 
   logo: {
-    height: 152,
-    width: 190,
+    height: 115,
+    width: 145,
   },
 
   ring: {

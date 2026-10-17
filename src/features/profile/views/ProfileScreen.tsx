@@ -337,6 +337,8 @@ function PrivacySupportItem({
 /* SCREEN */
 /* ========================================================= */
 
+const PROFILE_CONTENT_MAX_WIDTH = 1200;
+
 export function ProfileScreen() {
   const navigation =
     useNavigation();
@@ -531,7 +533,7 @@ export function ProfileScreen() {
             styles.content,
             {
               maxWidth:
-                responsive.maxContentWidth,
+                PROFILE_CONTENT_MAX_WIDTH,
             },
           ]}
         >

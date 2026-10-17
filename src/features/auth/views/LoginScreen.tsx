@@ -35,7 +35,6 @@ export function LoginScreen({ navigation }: Props) {
   } = useAuthSession();
 
   const biometricRequestedRef = useRef(false);
-  const scrollViewRef = useRef<ScrollView>(null);
 
   const goToOtp = useCallback(
     ({
@@ -177,14 +176,13 @@ export function LoginScreen({ navigation }: Props) {
   style={{ flex: 1 }}
 >
   <ScrollView
-    ref={scrollViewRef}
     bounces={false}
     contentInsetAdjustmentBehavior="never"
     contentContainerStyle={[
       styles.scrollContent,
       {
         paddingTop: Math.max(insets.top + 18, 28),
-        paddingBottom: Math.max(insets.bottom + 12, 18),
+        paddingBottom: Math.max(insets.bottom + 32, 44),
       },
     ]}
     keyboardShouldPersistTaps="handled"
@@ -241,12 +239,6 @@ export function LoginScreen({ navigation }: Props) {
             <TextInput
               autoCapitalize="none"
               autoComplete="username"
-              onFocus={() => {
-  scrollViewRef.current?.scrollTo({
-    y: 110,
-    animated: true,
-  });
-}}
               dense
               mode="outlined"
               onChangeText={vm.setLoginId}
@@ -494,6 +486,7 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     flexGrow: 1,
+    justifyContent: 'center',
     paddingHorizontal: 24,
   },
 

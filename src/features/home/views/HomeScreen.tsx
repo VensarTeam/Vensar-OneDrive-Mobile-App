@@ -362,6 +362,23 @@ function chunkServices<T>(items: T[], size: number): T[][] {
   return pages;
 }
 
+const HOME_CONTENT_MAX_WIDTH = 1200;
+const SERVICE_GRID_GAP = 12;
+
+function getServiceGridLayout(layout: ReturnType<typeof useResponsiveLayout>) {
+  const pageWidth =
+    Math.min(layout.width, HOME_CONTENT_MAX_WIDTH) -
+    layout.horizontalPadding * 2;
+  const columns = pageWidth >= 720 ? 4 : 3;
+
+  return {
+    cardWidth: (pageWidth - SERVICE_GRID_GAP * (columns - 1)) / columns,
+    columns,
+    pageSize: columns * 3,
+    pageWidth,
+  };
+}
+
 export function HomeScreen() {
   const navigation =
     useNavigation<BottomTabNavigationProp<HomeTabParamList, "Dashboard">>();
@@ -369,6 +386,8 @@ export function HomeScreen() {
   const insets = useSafeAreaInsets();
 
   const layout = useResponsiveLayout();
+
+  const serviceGrid = getServiceGridLayout(layout);
 
   const { colorScheme, theme } = useAppTheme();
 
@@ -617,7 +636,7 @@ export function HomeScreen() {
           styles.contentInner,
 
           {
-            maxWidth: layout.maxContentWidth,
+            maxWidth: HOME_CONTENT_MAX_WIDTH,
           },
         ]}
       >
@@ -627,6 +646,7 @@ export function HomeScreen() {
     {
       paddingHorizontal: layout.horizontalPadding,
       paddingTop: insets.top + 8,
+      paddingBottom: Math.max(insets.bottom, 24) + 24,
     },
   ]}
   keyboardDismissMode="on-drag"
@@ -1091,8 +1111,7 @@ export function HomeScreen() {
                     pagingEnabled
                     showsHorizontalScrollIndicator={false}
                     onMomentumScrollEnd={(event) => {
-                      const pageWidth =
-                        layout.width - layout.horizontalPadding * 2;
+                      const pageWidth = serviceGrid.pageWidth;
 
                       if (pageWidth <= 0) return;
 
@@ -1105,14 +1124,14 @@ export function HomeScreen() {
                     style={styles.carouselScroll}
                     contentContainerStyle={styles.carouselContent}
                   >
-                    {chunkServices(sortedServices, 9).map((page, pageIndex) => (
+                    {chunkServices(sortedServices, serviceGrid.pageSize).map((page, pageIndex) => (
                       <View
                         key={`service-page-${pageIndex}`}
                         style={[
                           styles.servicePage,
 
                           {
-                            width: layout.width - layout.horizontalPadding * 2,
+                            width: serviceGrid.pageWidth,
                           },
                         ]}
                       >
@@ -1130,6 +1149,7 @@ export function HomeScreen() {
                                 service.serviceId,
                                 folderAppearance,
                               )}
+                              cardWidth={serviceGrid.cardWidth}
                               key={service.id}
                               onPress={openService}
                               service={service}
@@ -1149,9 +1169,9 @@ export function HomeScreen() {
                     ))}
                   </ScrollView>
 
-                  {sortedServices.length > 3 ? (
+                  {sortedServices.length > serviceGrid.pageSize ? (
                     <View style={styles.carouselDots}>
-                      {chunkServices(sortedServices, 9).map((_, index) => (
+                      {chunkServices(sortedServices, serviceGrid.pageSize).map((_, index) => (
                         <View
                           key={`service-dot-${index}`}
                           style={[
@@ -1248,6 +1268,7 @@ function StarredServicesSection({
   const { theme } = useAppTheme();
   const { colors } = theme;
   const layout = useResponsiveLayout();
+  const serviceGrid = getServiceGridLayout(layout);
   const [starredServicePageIndex, setStarredServicePageIndex] = useState(0);
 
   const starredServices = services.filter((service) =>
@@ -1256,7 +1277,7 @@ function StarredServicesSection({
     ),
   );
 
-  const starredServicePages = chunkServices(starredServices, 3);
+  const starredServicePages = chunkServices(starredServices, serviceGrid.columns);
 
   useEffect(() => {
     setStarredServicePageIndex(0);
@@ -1306,7 +1327,7 @@ function StarredServicesSection({
             pagingEnabled
             showsHorizontalScrollIndicator={false}
             onMomentumScrollEnd={(event) => {
-              const pageWidth = layout.width - layout.horizontalPadding * 2;
+              const pageWidth = serviceGrid.pageWidth;
 
               if (pageWidth <= 0) return;
 
@@ -1322,21 +1343,13 @@ function StarredServicesSection({
                 key={`starred-service-page-${pageIndex}`}
                 style={[
                   styles.starredServicePage,
-{
-  width:
-    layout.width -
-    layout.horizontalPadding * 2,
-  justifyContent:
-    page.length === 3
-      ? 'space-between'
-      : 'flex-start',
-  gap: page.length === 2 ? 16 : 0,
-},
+                  { width: serviceGrid.pageWidth },
                 ]}
               >
                 {page.map((service) => (
                   <ServiceCard
                     accent={serviceAccent(service.serviceId, folderAppearance)}
+                    cardWidth={serviceGrid.cardWidth}
                     key={service.id}
                     onPress={() => onPress(service)}
                     service={service}
@@ -1711,6 +1724,7 @@ function ServiceListItem({
 
 function ServiceCard({
   accent,
+  cardWidth,
 
   onPress,
 
@@ -1722,6 +1736,7 @@ function ServiceCard({
   userId,
 }: {
   accent: string;
+  cardWidth: number;
 
   onPress: () => void;
 
@@ -1735,6 +1750,7 @@ function ServiceCard({
   const [isStarred, setIsStarred] = useState(starred);
 
   const { colorScheme, theme } = useAppTheme();
+  const layout = useResponsiveLayout();
 
   const icon = getServiceIcon(service);
 
@@ -1750,6 +1766,8 @@ function ServiceCard({
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
+        !layout.isCompact && styles.tabletCard,
+        { width: cardWidth },
 
         {
           backgroundColor: pressed
@@ -2143,7 +2161,7 @@ const styles = StyleSheet.create({
 
     flexWrap: "wrap",
 
-    justifyContent: "space-between",
+    columnGap: SERVICE_GRID_GAP,
 
     rowGap: 12,
 
@@ -2156,6 +2174,7 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
     flexDirection: "row",
     justifyContent: "flex-start",
+    columnGap: SERVICE_GRID_GAP,
     paddingBottom: 0,
     paddingTop: 2,
   },
@@ -2283,8 +2302,6 @@ const styles = StyleSheet.create({
 
     aspectRatio: 0.94,
 
-    width: "32%",
-
     borderCurve: "continuous",
 
     borderRadius: 18,
@@ -2300,6 +2317,10 @@ const styles = StyleSheet.create({
     paddingTop: 17,
 
     position: "relative",
+  },
+
+  tabletCard: {
+    aspectRatio: 1.2,
   },
 
   cardAccentFill: {
@@ -2337,11 +2358,11 @@ const styles = StyleSheet.create({
 
     padding: 6,
 
-    position: "relative",
+    position: "absolute",
 
-    right: 38,
+    right: 8,
 
-    top: 20,
+    top: 8,
 
     zIndex: 10,
 
